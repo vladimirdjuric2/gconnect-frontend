@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GimelNet - Korisnički prikaz (RPi)</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <link rel="stylesheet" href="css/style.css?v=1.2.4">
+</head>
+<body>
+
+    <div id="top-nav">
+        <div class="logo-group-container">
+            <div id="logo-text">GimelNet - <span id="sistemski-naziv-prikaz">Učitavanje...</span></div>
+            <button class="btn-edit-system" id="btnEditSystem">
+                <i class="fas fa-pencil-alt"></i> EDIT SISTEMA
+            </button>
+        </div>
+
+        <div class="nav-center-links">
+            <div class="nav-link-custom" data-bs-toggle="modal" data-bs-target="#modalPodesavanja">
+                <i class="fas fa-cog"></i> SETOVANJA
+            </div>
+            <div class="nav-link-custom" id="nav-btn-zalivanje" data-bs-toggle="modal" data-bs-target="#modalZalivanje">
+                <i class="fas fa-shower"></i> ZALIVANJE
+            </div>
+            <div class="nav-link-custom">
+                <i class="fas fa-tasks"></i> AKTIVNI NALOZI
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <div class="nav-user" id="nav-user-prikaz">Učitavanje...</div>
+            <button class="btn-odjava">Odjava</button>
+        </div>
+    </div>
+
+    <!-- Bočna paleta sa alatima za Edit Režim -->
+    <div id="editor-sidebar">
+        <button class="palette-tool tool-zone-draw" id="tool-zone-draw" style="margin-bottom: 5px;">
+            <i class="fas fa-draw-polygon"></i>
+            <span>Zona zalivanja</span>
+        </button>
+        <div style="border-bottom: 1px solid rgba(255, 255, 255, 0.1); margin-bottom: 10px;"></div>
+
+        <p style="font-size: 11px; color: #ced4da; margin-top: 0px;">Izaberi komponentu i klikni na mapu da je postaviš:</p>
+        
+        <button class="palette-tool tool-gnc" id="tool-gnc">
+            <i class="fas fa-microchip"></i>
+            <span>GNC Kontroler</span>
+        </button>
+        <button class="palette-tool tool-pump" id="tool-pump">
+            <i class="fas fa-faucet-drip"></i>
+            <span>Pumpa za vodu</span>
+        </button>
+        <button class="palette-tool tool-valve" id="tool-valve">
+            <i class="fas fa-shower"></i>
+            <span>Elektroventil</span>
+        </button>
+        <button class="palette-tool tool-gauge" id="tool-gauge">
+            <i class="fas fa-gauge-high"></i>
+            <span>Merač pritiska</span>
+        </button>
+        <button class="palette-tool tool-flow_meter" id="tool-flow_meter">
+            <i class="fas fa-water"></i>
+            <span>Merač protoka</span>
+        </button>
+        <button class="palette-tool tool-pipe" id="tool-pipe">
+            <i class="fas fa-route"></i>
+            <span>Crevo za vodu</span>
+        </button>
+        <button class="palette-tool tool-wire" id="tool-wire">
+            <i class="fas fa-plug-circle-bolt"></i>
+            <span>Elektro ožičenje</span>
+        </button>
+        
+        <div class="sidebar-footer">
+            <div class="footer-buttons-row">
+                <button class="btn-save-layout" id="btnSaveLayout">
+                    <i class="fas fa-save"></i> SNIMI
+                </button>
+                <button class="btn-close-sidebar" id="btnCloseSidebar">
+                    <i class="fas fa-times"></i> ZATVORI
+                </button>
+            </div>
+            <div style="border-top: 1px solid rgba(255, 255, 255, 0.1); margin: 5px 0;"></div>
+            <button class="btn-export-layout" id="btnExportLayout" title="Preuzmi raspored kao JSON fajl">
+                <i class="fas fa-file-export"></i> Izvezi JSON
+            </button>
+            <button class="btn-import-layout" id="btnImportLayout" title="Učitaj raspored iz JSON fajla">
+                <i class="fas fa-file-import"></i> Uvezi JSON
+            </button>
+            <input type="file" id="importFile" accept=".json" style="display: none;">
+        </div>
+    </div>
+
+    <div id="map-container">
+        <div id="mapa">
+            <!-- Plutajući GNC panel sa pinovima (Sada unutar mape radi ispravnog z-indexa žica) -->
+            <div id="gnc-schematic-overlay" class="gnc-schematic-card"></div>
+        </div>
+
+        <!-- Plutajući panel za brzu kontrolu vidljivosti slojeva (Quick Layers Panel) -->
+        <div class="quick-layers-panel" id="quickLayersPanel">
+            <button class="quick-layer-btn btn-stopala" id="btnLayerStopala" title="Istorija zalivanja (👣)">
+                <i class="fas fa-shoe-prints"></i>
+            </button>
+            <button class="quick-layer-btn btn-trougao" id="btnLayerTrougao" title="Površine njiva (📐)">
+                <i class="fas fa-ruler-combined"></i>
+            </button>
+            <button class="quick-layer-btn btn-etiketa" id="btnLayerEtiketa" title="Imena njiva (🏷️)">
+                <i class="fas fa-tag"></i>
+            </button>
+            <button class="quick-layer-btn btn-nazivi" id="btnLayerNazivi" title="Svi nazivi na mapi (Abc)">
+                <span class="abc-label">Abc</span>
+            </button>
+            <button class="quick-layer-btn btn-mapica" id="btnLayerMapica" title="Prikaz njiva (🗺️)">
+                <i class="fas fa-map"></i>
+            </button>
+            <button class="quick-layer-btn btn-zone" id="btnLayerZone" title="Zone zalivanja (💧)">
+                <i class="fas fa-water"></i>
+            </button>
+            <button class="quick-layer-btn btn-cevi" id="btnLayerCevi" title="Vodovodni vodovi (⚙️💧)">
+                <i class="fas fa-cog"></i>
+                <div class="sub-icon-badge"><i class="fas fa-tint"></i></div>
+            </button>
+            <button class="quick-layer-btn btn-zice" id="btnLayerZice" title="Elektrovodovi / žice (⚙️⚡)">
+                <i class="fas fa-cog"></i>
+                <div class="sub-icon-badge"><i class="fas fa-bolt"></i></div>
+            </button>
+            <button class="quick-layer-btn btn-uredjaji" id="btnLayerUredjaji" title="Uređaji i komponente (⚙️)">
+                <i class="fas fa-cog"></i>
+            </button>
+        </div>
+        
+        <div class="map-control-bottom-left">
+            <button class="btn-map-switch" id="btnMapSwitch">Mapa: Satelit</button>
+            <input type="text" class="search-box" placeholder="Traži mesto ili lat,lon...">
+            <button class="btn-ok">OK</button>
+        </div>
+
+        <div class="map-control-bottom-right">
+            <button class="btn-remove-measurements" id="btnRemoveMeasurements">
+                <i class="fas fa-trash-alt"></i> UKLONI MERENJA
+            </button>
+            <button class="btn-measure" id="btnMeasure">
+                <i class="fas fa-ruler-combined"></i> MERENJE
+            </button>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalPodesavanja" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-cog text-secondary"></i> Korisnička podešavanja
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" style="padding: 0;">
+                    
+                    <ul class="nav nav-tabs nav-justified" id="myTab" role="tablist" style="background-color: #343a40;">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active text-white" id="njive-tab" data-bs-toggle="tab" data-bs-target="#njive-pane" type="button" role="tab">NJIVE</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link text-white" id="kat-tab" data-bs-toggle="tab" data-bs-target="#kat-pane" type="button" role="tab">KAT. OPŠTINE</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link text-white" id="opsta-tab" data-bs-toggle="tab" data-bs-target="#opsta-pane" type="button" role="tab">OPŠTA PODEŠAVANJA</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content" id="myTabContent" style="padding: 20px;">
+                        <div class="tab-pane fade show active" id="njive-pane" role="tabpanel">
+                            <p style="font-size: 13px; color: #ced4da;">
+                                <i class="fas fa-plant-wilt text-success"></i> Upravljanje njivama i proizvodnim godinama
+                            </p>
+                            <button class="btn-new-field" data-bs-toggle="modal" data-bs-target="#modalNovaNjiva">
+                                + NOVA NJIVA
+                            </button>
+                            
+                            <table class="njive-table">
+                                <tbody id="njive-table-body">
+                                    <!-- Dinamički učitane njive će biti prikazane ovde -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Tab za Katastarske Opštine -->
+                        <div class="tab-pane fade" id="kat-pane" role="tabpanel">
+                            <p style="font-size: 13px; color: #ced4da;">
+                                <i class="fas fa-city text-warning"></i> Upravljanje katastarskim opštinama
+                            </p>
+                            <div class="input-group mb-3">
+                                <input type="text" id="nova-opstina-input" class="form-control form-control-custom" placeholder="Unesite naziv nove katastarske opštine...">
+                                <button type="button" id="btn-dodaj-opstinu" class="btn btn-success font-weight-bold" style="font-size: 13px; border-radius: 0 4px 4px 0;">
+                                    <i class="fas fa-plus"></i> DODAJ
+                                </button>
+                            </div>
+                            <table class="njive-table">
+                                <tbody id="opstine-table-body">
+                                    <!-- Dinamički učitane opštine će biti prikazane ovde -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Tab za Opšta Podešavanja -->
+                        <div class="tab-pane fade" id="opsta-pane" role="tabpanel">
+                            <p style="font-size: 13px; color: #ced4da;">
+                                <i class="fas fa-sliders text-info"></i> Opšta podešavanja sistema za navodnjavanje
+                            </p>
+                            <div class="mb-3">
+                                <label class="form-label-custom">Naziv sistema</label>
+                                <input type="text" id="opt-naziv-sistema" class="form-control form-control-custom" value="" placeholder="npr. Korisnički prikaz">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label-custom">Korisnička grupa / Ime</label>
+                                <input type="text" id="opt-korisnik-grupa" class="form-control form-control-custom" value="" placeholder="npr. Grupa: Djuric">
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label-custom">Geografska širina (Centar mape)</label>
+                                    <input type="text" id="opt-map-lat" class="form-control form-control-custom" value="" placeholder="npr. 45.556">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label-custom">Geografska dužina (Centar mape)</label>
+                                    <input type="text" id="opt-map-lon" class="form-control form-control-custom" value="" placeholder="npr. 20.412">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label-custom">Podrazumevani Zoom nivo</label>
+                                <input type="number" id="opt-map-zoom" class="form-control form-control-custom" value="" min="1" max="21" placeholder="npr. 13">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary-custom" data-bs-dismiss="modal">ODUSTANI</button>
+                    <button type="button" class="btn-primary-custom" id="btn-snimi-podesavanja">SNIMI</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalNovaNjiva" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content" style="border-top: 5px solid #00cc00;">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus-circle text-success"></i> Nova njiva
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="background-color: #2b3035;">
+                <div class="row mb-3">
+                    <div class="col-md-6 mb-2 mb-md-0">
+                        <label class="form-label-custom">Naziv njive *</label>
+                        <input type="text" id="njiva-naziv" class="form-control form-control-custom" placeholder="Unesite naziv njive...">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-custom">Opis/oprema</label>
+                        <textarea id="njiva-opis" class="form-control form-control-custom" rows="1" placeholder="Oprema, zaštita, napomene..." style="height: 38px; resize: none;"></textarea>
+                    </div>
+                </div>
+
+                <div style="background-color: #1a1a1a; border: 1px solid #495057; border-radius: 6px; overflow: hidden; margin-top: 20px;">
+                    <div style="background-color: #004085; padding: 10px; display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-layer-group text-white"></i>
+                        <span style="font-weight: bold; font-size: 14px; text-transform: uppercase;">Parcele</span>
+                    </div>
+                    
+                    <div style="padding: 15px;">
+                        <div id="parcele-kontejner">
+                            <!-- Parcele se ovde dinamički generišu -->
+                        </div>
+
+                        <button id="btn-dodaj-parcelu" type="button" class="btn w-100" style="background-color: #004d00; color: #00cc00; border: 1px dashed #00cc00; font-weight: bold; font-size: 13px; padding: 10px;">
+                            <i class="fas fa-plus-circle"></i> DODAJ PARCELU
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="background-color: #212529;">
+                <input type="hidden" id="njiva-edit-id" value="">
+                <button type="button" class="btn-secondary-custom" data-bs-dismiss="modal">ODUSTANI</button>
+                <button type="button" id="btn-snimi-njivu" class="btn-primary-custom" style="padding: 10px 40px;">SNIMI</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Modal za Karakteristike Uređaja -->
+<div class="modal fade" id="modalUredjajKarakteristike" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-top: 5px solid #00bcff;">
+            <div class="modal-header">
+                <h5 class="modal-title" id="dev-modal-title">
+                    <i class="fas fa-microchip text-info"></i> Podešavanje uređaja
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body modal-body-custom">
+                <!-- Glavni podaci -->
+                <div id="dev-sec-general">
+                    <div class="mb-3">
+                        <label class="form-label-custom">Naziv uređaja *</label>
+                        <input type="text" id="dev-name" class="form-control form-control-custom" placeholder="Unesite naziv...">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label-custom">Mrežna adresa (IP / ID)</label>
+                        <input type="text" id="dev-network-id" class="form-control form-control-custom" placeholder="Npr. 192.168.1.100">
+                    </div>
+                </div>
+
+                <!-- Dinamičke sekcije prema tipu uređaja -->
+                
+                <!-- SEKCIJA: PUMPA -->
+                <div id="dev-sec-pump" class="dev-type-section d-none">
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label-custom">Naziv uređaja *</label>
+                            <input type="text" id="dev-pump-name" class="form-control form-control-custom" placeholder="Unesite naziv...">
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label-custom">Maksimalni kapacitet (m³/h)</label>
+                            <input type="number" step="0.1" id="dev-pump-capacity" class="form-control form-control-custom" placeholder="Npr. 15.0">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label-custom">Mrežna adresa (IP / ID)</label>
+                            <input type="text" id="dev-pump-network-id" class="form-control form-control-custom" placeholder="Npr. 192.168.1.100">
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label-custom">Naziv porta/pina</label>
+                            <input type="text" id="dev-pump-port-pin" class="form-control form-control-custom" placeholder="Npr. GPIO21">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label-custom d-block">Ručna kontrola rada</label>
+                        <div class="d-flex gap-2">
+                            <button type="button" id="btn-pump-on" class="btn btn-success flex-grow-1 font-weight-bold py-2" style="font-size: 12px;">
+                                <i class="fas fa-play"></i> UKLJUČI PUMPU
+                            </button>
+                            <button type="button" id="btn-pump-off" class="btn btn-danger flex-grow-1 font-weight-bold py-2" style="font-size: 12px;">
+                                <i class="fas fa-stop"></i> ISKLJUČI PUMPU
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SEKCIJA: ELEKTROVENTIL -->
+                <div id="dev-sec-valve" class="dev-type-section d-none">
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label-custom">Naziv uređaja *</label>
+                            <input type="text" id="dev-valve-name" class="form-control form-control-custom" placeholder="Unesite naziv...">
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label-custom">Promer elektroventila</label>
+                            <select id="dev-valve-promer" class="form-select form-control-custom">
+                                <option value="DN25">DN25 (1")</option>
+                                <option value="DN32">DN32 (1 1/4")</option>
+                                <option value="DN40">DN40 (1 1/2")</option>
+                                <option value="DN50">DN50 (2")</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label-custom">Mrežna adresa (IP / ID)</label>
+                            <input type="text" id="dev-valve-network-id" class="form-control form-control-custom" placeholder="Npr. 192.168.1.100">
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label-custom">Naziv porta/pina</label>
+                            <input type="text" id="dev-valve-port-pin" class="form-control form-control-custom" placeholder="Npr. GPIO22">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label-custom d-block">Ručno preklapanje stanja</label>
+                        <div class="d-flex gap-2">
+                            <button type="button" id="btn-valve-open" class="btn btn-success flex-grow-1 font-weight-bold py-2" style="font-size: 12px;">
+                                <i class="fas fa-unlock"></i> OTVORI VENTIL
+                            </button>
+                            <button type="button" id="btn-valve-close" class="btn btn-danger flex-grow-1 font-weight-bold py-2" style="font-size: 12px;">
+                                <i class="fas fa-lock"></i> ZATVORI VENTIL
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SEKCIJA: SENZORI (Gauge & Flow Meter) -->
+                <div id="dev-sec-sensor" class="dev-type-section d-none">
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label-custom">Naziv uređaja *</label>
+                            <input type="text" id="dev-sensor-name" class="form-control form-control-custom" placeholder="Unesite naziv...">
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label-custom d-block">Tip signala / Povezivanje</label>
+                            <div class="btn-group w-100" role="group">
+                                <input type="radio" class="btn-check" name="sensor_type" id="sens-type-pulse" value="pulse" autocomplete="off" checked>
+                                <label class="btn btn-outline-info text-white" for="sens-type-pulse" style="font-size: 11px; padding: 6px 4px;">Impulsni</label>
+
+                                <input type="radio" class="btn-check" name="sensor_type" id="sens-type-420" value="4_20ma" autocomplete="off">
+                                <label class="btn btn-outline-info text-white" for="sens-type-420" style="font-size: 11px; padding: 6px 4px;">4-20 mA</label>
+
+                                <input type="radio" class="btn-check" name="sensor_type" id="sens-type-analog" value="analog" autocomplete="off">
+                                <label class="btn btn-outline-info text-white" for="sens-type-analog" style="font-size: 11px; padding: 6px 4px;">Analogni (0-3.3V/5V/10V)</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-6 mb-3" id="col-sensor-network-id">
+                            <label class="form-label-custom">Mrežna adresa (IP / ID)</label>
+                            <input type="text" id="dev-sensor-network-id" class="form-control form-control-custom" placeholder="Npr. 192.168.1.100">
+                        </div>
+                        <div class="col-6 mb-3" id="col-sensor-port-pin">
+                            <label class="form-label-custom">Naziv porta/pina</label>
+                            <input type="text" id="dev-sensor-port-pin" class="form-control form-control-custom" placeholder="Npr. GPIO23">
+                        </div>
+                        <div class="col-4 mb-3 d-none" id="col-sensor-max-pressure">
+                            <label class="form-label-custom">Maksimalni pritisak (bar)</label>
+                            <input type="number" step="0.1" id="dev-sensor-max-pressure" class="form-control form-control-custom" placeholder="Npr. 10.0">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label-custom">Python formula / prelazna funkcija</label>
+                        <textarea id="dev-sensor-formula" class="form-control formula-code-box" placeholder="# Primer formule sa više redova (unosite ulaz 'x', a krajnji rezultat dodelite u 'y'):&#10;napon = (x / 1023.0) * 3.3&#10;if napon &lt; 0.5:&#10;    y = 0.0&#10;else:&#10;    y = (napon - 0.5) * 10.0 / 4.0"></textarea>
+                        <div id="sensor-analog-gauge-container" class="mt-3 d-none">
+                            <button type="button" id="btn-show-analog-gauge" class="btn btn-outline-info w-100 font-weight-bold py-2" style="font-size: 12px; border-color: #00ffcc; color: #00ffcc;">
+                                <i class="fas fa-gauge-high"></i> OTVORI ANALOGNI SAT
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SEKCIJA: GNC KONTROLER (STM32) -->
+                <div id="dev-sec-gnc" class="dev-type-section d-none">
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label-custom">Naziv uređaja *</label>
+                            <input type="text" id="dev-gnc-name" class="form-control form-control-custom" placeholder="Unesite naziv...">
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label-custom">Model slave uređaja</label>
+                            <select id="dev-gnc-model" class="form-select form-control-custom">
+                                <option value="GNC2444">GNC2444</option>
+                                <option value="GNC4444">GNC4444</option>
+                                <option value="GNC8884">GNC8884</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <label class="form-label-custom">Mrežna adresa (IP / ID)</label>
+                            <input type="text" id="dev-gnc-network-id" class="form-control form-control-custom" placeholder="Npr. 192.168.1.150">
+                            <input type="hidden" id="dev-gnc-port-pin" value="">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="dev-gnc-remember-position" style="cursor: pointer;">
+                                <label class="form-check-label text-white" style="font-size: 13px; cursor: pointer;" for="dev-gnc-remember-position">
+                                    Zapamti poziciju panela sa pinovima na mapi
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label-custom">Znanje Kontrolera (Programska logika / Pravila)</label>
+                        <textarea id="dev-gnc-logic" class="form-control formula-code-box" style="height: 120px;" placeholder="# Primer logike rada GNC kontrolera:&#10;# Možete pisati uslove i definisati pravila ponašanja.&#10;IF pritisak_glavni > 4.2 THEN iskljuci_pumpu_1&#10;IF vlaznost_zemlje < 30% THEN otvori_ventil_A&#10;IF protok_vode == 0 THEN javi_gresku"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="background-color: #212529;">
+                <input type="hidden" id="dev-edit-id" value="">
+                <button type="button" id="btn-dev-delete" class="btn btn-danger me-auto" style="font-size: 13px; font-weight: bold;">
+                    <i class="fas fa-trash-alt"></i> UKLONI
+                </button>
+                <button type="button" class="btn-secondary-custom" data-bs-dismiss="modal">ODUSTANI</button>
+                <button type="button" id="btn-dev-save" class="btn-primary-custom" style="padding: 10px 30px;">SAČUVAJ</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal za Karakteristike Cevovoda / Creva -->
+<div class="modal fade" id="modalCrevoKarakteristike" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-top: 5px solid #ff8c00;">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-route text-warning"></i> Podešavanje cevovoda / creva
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body modal-body-custom">
+                <div class="mb-4">
+                    <label class="form-label-custom mb-2">Kategorija cevovoda (srazmerna debljina)</label>
+                    
+                    <div class="pipe-category-option" data-category="main" data-thickness="8">
+                        <div>
+                            <span class="badge bg-primary me-2">Glavni</span>
+                            <b>Glavni magistralni vod</b>
+                        </div>
+                        <span style="color: #a0a0a0; font-size: 12px;">Debljina: 8px</span>
+                    </div>
+
+                    <div class="pipe-category-option" data-category="secondary" data-thickness="5">
+                        <div>
+                            <span class="badge bg-success me-2">Sekundar</span>
+                            <b>Sekundarni vod</b>
+                        </div>
+                        <span style="color: #a0a0a0; font-size: 12px;">Debljina: 5px</span>
+                    </div>
+
+                    <div class="pipe-category-option" data-category="lateral" data-thickness="3">
+                        <div>
+                            <span class="badge bg-warning me-2">Lateral</span>
+                            <b>Sektorski lateral</b>
+                        </div>
+                        <span style="color: #a0a0a0; font-size: 12px;">Debljina: 3px</span>
+                    </div>
+
+                    <div class="pipe-category-option" data-category="drip" data-thickness="2">
+                        <div>
+                            <span class="badge bg-secondary me-2">Kap-po-kap</span>
+                            <b>Kap-po-kap traka</b>
+                        </div>
+                        <span style="color: #a0a0a0; font-size: 12px;">Debljina: 2px</span>
+                    </div>
+                    
+                    <input type="hidden" id="pipe-category-val" value="main">
+                    <input type="hidden" id="pipe-thickness-val" value="8">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label-custom">Boja cevovoda</label>
+                    <div class="pipe-color-picker-container">
+                        <input type="color" id="pipe-color-picker" class="color-input-custom" value="#0055ff">
+                        <span style="font-size: 13px; color: #ced4da;">Izaberite personalizovanu boju za ovaj cevovod</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="background-color: #212529;">
+                <input type="hidden" id="pipe-edit-id" value="">
+                <button type="button" id="btn-pipe-delete" class="btn btn-danger me-auto" style="font-size: 13px; font-weight: bold;">
+                    <i class="fas fa-trash-alt"></i> UKLONI CREVO
+                </button>
+                <button type="button" id="btn-pipe-edit-geometry" class="btn btn-warning" style="font-size: 13px; font-weight: bold; display: flex; align-items: center; gap: 5px; color: #212529;">
+                    <i class="fas fa-route"></i> UREDI GEOMETRIJU
+                </button>
+                <button type="button" class="btn-secondary-custom" data-bs-dismiss="modal">ODUSTANI</button>
+                <button type="button" id="btn-pipe-save" class="btn-primary-custom" style="padding: 10px 30px;">SAČUVAJ</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal za potvrdu brisanja tačke creva -->
+<div class="modal fade" id="modalObrisiTackuCreva" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-top: 5px solid #dc3545; background-color: #2b3035; color: #f8f9fa;">
+            <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                <h5 class="modal-title text-danger">
+                    <i class="fas fa-trash-alt" style="margin-right: 8px;"></i>Brisanje tačke sa creva
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <p style="font-size: 16px; margin-bottom: 0;">Da li ste sigurni da želite da obrišete ovu tačku sa creva za vodu?</p>
+            </div>
+            <div class="modal-footer" style="background-color: #212529; border-top: 1px solid rgba(255,255,255,0.1);">
+                <button type="button" class="btn-secondary-custom" data-bs-dismiss="modal">ODUSTANI</button>
+                <button type="button" id="btn-potvrdi-brisanje-tacke" class="btn btn-danger" style="padding: 10px 30px; font-weight: bold;">OBRIŠI</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal za Elektro Ožičenje (Žice) -->
+<div class="modal fade" id="modalZicaKarakteristike" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-top: 5px solid #ef4444; background-color: #2b3035; color: #f8f9fa;">
+            <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                <h5 class="modal-title">
+                    <i class="fas fa-plug-circle-bolt text-danger" style="margin-right: 8px;"></i>Podešavanje Elektro Voda
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body modal-body-custom">
+                <div id="wire-edit-info">
+                    <!-- Dinamičke informacije o povezanim pinovima se ubacuju ovde -->
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label-custom">Boja elektro-voda</label>
+                    <div class="pipe-color-picker-container d-flex align-items-center gap-3">
+                        <input type="color" id="wire-color-picker" class="color-input-custom" value="#ef4444">
+                        <span style="font-size: 13px; color: #ced4da;">Izaberite boju za ovaj električni vod</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="background-color: #212529; border-top: 1px solid rgba(255,255,255,0.1);">
+                <input type="hidden" id="wire-edit-id" value="">
+                <button type="button" id="btn-wire-delete" class="btn btn-danger me-auto" style="font-size: 13px; font-weight: bold;">
+                    <i class="fas fa-trash-alt"></i> UKLONI VOD
+                </button>
+                <button type="button" class="btn-secondary-custom" data-bs-dismiss="modal">ODUSTANI</button>
+                <button type="button" id="btn-wire-save" class="btn-primary-custom" style="padding: 10px 30px; background: linear-gradient(135deg, #ef4444, #b91c1c); border: none;">SAČUVAJ</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal za Scenarije i Radne Liste Zalivanja -->
+<div class="modal fade" id="modalZalivanje" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content" style="border-top: 5px solid #df49ff; background-color: #1a1d20; color: #f8f9fa;">
+            <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                <h5 class="modal-title">
+                    <i class="fas fa-shower text-info" style="color: #df49ff !important;"></i> Scenariji za zalivanje
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Biranje/Kreiranje Scenarija -->
+                <div class="row align-items-end mb-4">
+                    <div class="col-md-6 mb-2 mb-md-0">
+                        <label class="form-label-custom">Izaberite scenario</label>
+                        <select id="scenario-select" class="form-select form-control-custom">
+                            <!-- Učitava se dinamički -->
+                        </select>
+                    </div>
+                    <div class="col-md-6 d-flex gap-2">
+                        <button id="btn-scenario-new" class="btn btn-outline-info flex-grow-1 font-weight-bold" style="border-color: #df49ff; color: #df49ff; font-size: 13px;">
+                            <i class="fas fa-plus"></i> NOVI
+                        </button>
+                        <button id="btn-scenario-delete" class="btn btn-danger flex-grow-1 font-weight-bold" style="font-size: 13px;">
+                            <i class="fas fa-trash"></i> OBRIŠI
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Unos za novi scenario -->
+                <div id="scenario-new-container" class="mb-4 p-3 d-none" style="background-color: rgba(223, 73, 255, 0.05); border: 1px dashed rgba(223, 73, 255, 0.3); border-radius: 8px;">
+                    <label class="form-label-custom">Naziv novog scenarija</label>
+                    <div class="input-group">
+                        <input type="text" id="scenario-new-name" class="form-control form-control-custom" placeholder="Npr. Prolećno zalivanje voćnjaka">
+                        <button id="btn-scenario-cancel" class="btn btn-outline-secondary" style="border-color: rgba(255, 255, 255, 0.15); color: rgba(255, 255, 255, 0.7); font-size: 11.5px; font-weight: bold; background: rgba(255, 255, 255, 0.05); padding: 5px 15px; border-radius: 0;">ODBACI</button>
+                        <button id="btn-scenario-create" class="btn-primary-custom" style="padding: 5px 20px; background: #df49ff; border-color: #df49ff; color: #fff; border-top-left-radius: 0; border-bottom-left-radius: 0;">KREIRAJ</button>
+                    </div>
+                </div>
+
+                <hr style="border-color: rgba(255,255,255,0.1);">
+
+                <!-- Koraci Scenarija -->
+                <h6 class="mb-3 d-flex justify-content-between align-items-center">
+                    <span>Koraci u ovom scenariju</span>
+                    <span class="badge" style="background-color: rgba(223, 73, 255, 0.2); color: #df49ff; border: 1px solid #df49ff; font-size: 11px; padding: 5px 10px;">RADNA LISTA</span>
+                </h6>
+
+                <!-- Informativni alert za korisnika -->
+                <div class="alert alert-info py-2 px-3 mb-3" style="background-color: rgba(0, 255, 204, 0.05); border: 1px solid rgba(0, 255, 204, 0.2); color: #00ffcc; font-size: 12.5px; border-radius: 8px;">
+                    <i class="fas fa-info-circle"></i> <strong>Uputstvo:</strong> Kliknite na ventile direktno na mapi da ih selektujete (zasvetleće narandžasto), pa kliknite na dugme ispod da ih dodate kao nov korak sa željenom kubikažom.
+                </div>
+
+                <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+                    <table class="table table-dark table-hover table-striped align-middle" id="scenario-steps-table" style="font-size: 13px; border-color: rgba(255,255,255,0.05); margin-bottom: 0;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid rgba(255,255,255,0.1);">
+                                <th style="width: 80px;">Korak</th>
+                                <th>Ventili za otvaranje</th>
+                                <th style="width: 160px;">Količina (m³)</th>
+                                <th style="width: 100px; text-align: center;">Akcija</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scenario-steps-body">
+                            <!-- Popunjava se dinamički -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center mt-3 gap-3">
+                    <div id="selected-valves-counter" class="text-warning font-weight-bold" style="font-size: 13px;">
+                        Selektovano ventila na mapi: 0
+                    </div>
+                    <button id="btn-add-valves-step" class="btn btn-success font-weight-bold" style="background: linear-gradient(135deg, #00ffcc, #00cc99); border: none; color: #121212; font-size: 12px; padding: 10px 20px; border-radius: 6px; box-shadow: 0 4px 10px rgba(0, 255, 204, 0.15);">
+                        <i class="fas fa-hand-pointer"></i> SELEKTUJ VENTILE
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer" style="background-color: #121212; border-top: 1px solid rgba(255,255,255,0.1);">
+                <button type="button" class="btn-secondary-custom" data-bs-dismiss="modal">ODUSTANI</button>
+                <button type="button" id="btn-scenario-save" class="btn-primary-custom" style="padding: 10px 30px; background: linear-gradient(135deg, #df49ff, #c32aff); border: none; color: white; box-shadow: 0 4px 12px rgba(223, 73, 255, 0.2);">
+                    <i class="fas fa-save"></i> SAČUVAJ SCENARIO
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal za Izmenu Zone Zalivanja -->
+<div class="modal fade" id="modalZonaEdit" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-top: 5px solid #38bdf8; background-color: #2b3035; color: #f8f9fa;">
+            <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                <h5 class="modal-title">
+                    <i class="fas fa-shower text-info" style="margin-right: 8px; color: #38bdf8 !important;"></i>Uredi Zonu Zalivanja
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body modal-body-custom">
+                <div class="mb-3">
+                    <label class="form-label-custom">Naziv zone zalivanja</label>
+                    <input type="text" id="zone-edit-name" class="form-control form-control-custom" placeholder="Npr. Zona Voćnjak Sever">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label-custom" style="opacity: 0.7;">Informacije o zoni</label>
+                    <div class="p-3 rounded style-info-card" style="background-color: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span style="font-size: 13px; color: #ced4da;"><i class="fas fa-chart-area me-1"></i> Površina zone:</span>
+                            <span id="zone-edit-area-val" style="font-size: 14px; font-weight: bold; color: #38bdf8;">0.0 m²</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="background-color: #212529; border-top: 1px solid rgba(255,255,255,0.1);">
+                <input type="hidden" id="zone-edit-id" value="">
+                <button type="button" id="btn-zone-delete" class="btn btn-danger me-auto" style="font-size: 13px; font-weight: bold; display: flex; align-items: center; gap: 5px;">
+                    <i class="fas fa-trash-alt"></i> OBRIŠI ZONU
+                </button>
+                <button type="button" id="btn-zone-edit-geometry" class="btn btn-warning" style="font-size: 13px; font-weight: bold; display: flex; align-items: center; gap: 5px; color: #212529;">
+                    <i class="fas fa-draw-polygon"></i> UREDI GEOMETRIJU
+                </button>
+                <button type="button" class="btn-secondary-custom" data-bs-dismiss="modal">ODUSTANI</button>
+                <button type="button" id="btn-zone-save" class="btn-primary-custom" style="padding: 10px 30px; background: linear-gradient(135deg, #38bdf8, #0284c7); border: none;">SAČUVAJ</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Plutajući Panel za Izmenu Geometrije Zone -->
+<div id="zone-geom-edit-panel" class="zone-geom-edit-panel">
+    <div style="font-size: 13px; font-weight: bold; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;">
+        <span class="spinner-grow spinner-grow-sm text-info" role="status" style="animation-duration: 1.5s;"></span>
+        Uređivanje geometrije zone: <span id="zone-geom-edit-name-display" style="color: #38bdf8;">Naziv</span>
+    </div>
+    <div style="font-size: 11px; opacity: 0.8; border-left: 1px solid rgba(255,255,255,0.15); padding-left: 15px;">
+        <i class="fas fa-info-circle text-info"></i> Prevucite tačke za pomeranje. Desni klik / dvoklik na tačku za brisanje.
+    </div>
+    <div style="display: flex; gap: 8px; margin-left: auto;">
+        <button id="btn-zone-geom-cancel" class="btn btn-sm btn-outline-light" style="font-size: 12px; font-weight: bold; border-radius: 6px; padding: 4px 12px; border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); color: #fff;">ODUSTANI</button>
+        <button id="btn-zone-geom-save" class="btn btn-sm btn-info" style="font-size: 12px; font-weight: bold; border-radius: 6px; padding: 4px 12px; background: #38bdf8; border: none; color: #1e293b;">SAČUVAJ</button>
+    </div>
+</div>
+
+<!-- Plutajući Panel za Izmenu Geometrije Creva -->
+<div id="pipe-geom-edit-panel" class="zone-geom-edit-panel" style="border: 1px solid rgba(255, 140, 0, 0.4);">
+    <div style="font-size: 13px; font-weight: bold; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;">
+        <span class="spinner-grow spinner-grow-sm text-warning" role="status" style="animation-duration: 1.5s;"></span>
+        Uređivanje geometrije creva: <span id="pipe-geom-edit-name-display" style="color: #ff8c00;">ID</span>
+    </div>
+    <div style="font-size: 11px; opacity: 0.8; border-left: 1px solid rgba(255,255,255,0.15); padding-left: 15px;">
+        <i class="fas fa-info-circle text-warning"></i> Prevucite tačke za pomeranje krajeva creva.
+    </div>
+    <div style="display: flex; gap: 8px; margin-left: auto;">
+        <button id="btn-pipe-geom-cancel" class="btn btn-sm btn-outline-light" style="font-size: 12px; font-weight: bold; border-radius: 6px; padding: 4px 12px; border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); color: #fff;">ODUSTANI</button>
+        <button id="btn-pipe-geom-save" class="btn btn-sm btn-warning" style="font-size: 12px; font-weight: bold; border-radius: 6px; padding: 4px 12px; background: #ff8c00; border: none; color: #1e293b;">SAČUVAJ</button>
+    </div>
+</div>
+
+
+    <!-- Mobilna navigacija na dnu (Glassmorphic Bottom Tab Bar) -->
+    <div id="bottom-nav-mobile">
+        <button class="mobile-tab" id="mobile-tab-settings" data-bs-toggle="modal" data-bs-target="#modalPodesavanja">
+            <i class="fas fa-cog"></i>
+            <span>Setovanja</span>
+        </button>
+        <button class="mobile-tab" id="mobile-tab-pregled" data-bs-toggle="modal" data-bs-target="#modalZalivanje">
+            <i class="fas fa-shower"></i>
+            <span>Zalivanje</span>
+        </button>
+        <button class="mobile-tab" id="mobile-tab-nalozi">
+            <i class="fas fa-tasks"></i>
+            <span>Aktivni nalozi</span>
+        </button>
+        <button class="mobile-tab" id="mobile-tab-edit">
+            <i class="fas fa-pencil-alt"></i>
+            <span id="mobile-edit-text">Uredi</span>
+        </button>
+        <button class="mobile-tab" id="mobile-tab-logout">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Odjava</span>
+        </button>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script type="module" src="js/app.js?v=1.2.4"></script>
+</body>
+</html>
