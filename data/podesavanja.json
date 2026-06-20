@@ -1,0 +1,18 @@
+{
+    "system_name": "Irigacioni sistem",
+    "user_group": "Djuric",
+    "map_lat": "",
+    "map_lon": "",
+    "map_zoom": "5",
+    "layer_visibility": {
+        "stopala": false,
+        "trougao": false,
+        "etiketa": true,
+        "nazivi": false,
+        "mapica": true,
+        "zone": true,
+        "cevi": true,
+        "zice": false,
+        "uredjaji": true
+    }
+}

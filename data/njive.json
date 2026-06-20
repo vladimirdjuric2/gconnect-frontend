@@ -1,0 +1,56 @@
+[
+    {
+        "id": "njiva_1781426764259",
+        "naziv": "Kanal",
+        "opis": "kod kanala",
+        "parcele": [
+            {
+                "aktivna": true,
+                "katastarska_opstina": "Banatsko Karađorđevo",
+                "broj_parcele": "1405",
+                "povrsina": 4.213914892578125,
+                "koordinate": "45.611627, 20.577044\n45.613586, 20.578605\n45.613743, 20.578168\n45.613641, 20.577343\n45.613508, 20.576697\n45.612882, 20.573758",
+                "boja": "#00ccaa"
+            },
+            {
+                "aktivna": true,
+                "katastarska_opstina": "Banatsko Karađorđevo",
+                "broj_parcele": "1427",
+                "povrsina": 3.868048779296875,
+                "koordinate": "45.613586, 20.578605\n45.612274, 20.582041\n45.611267, 20.581255\n45.612597, 20.577817",
+                "boja": "#00cc00"
+            }
+        ]
+    },
+    {
+        "id": "njiva_1781435391589",
+        "naziv": "Breg",
+        "opis": "3 parcele i izvor vode",
+        "parcele": [
+            {
+                "aktivna": true,
+                "katastarska_opstina": "Banatsko Karađorđevo",
+                "broj_parcele": "1413",
+                "povrsina": 3.614036865234375,
+                "koordinate": "45.608686, 20.570401\n45.607409, 20.573745\n45.608368, 20.574502\n45.609647, 20.571147",
+                "boja": "#ff0000"
+            },
+            {
+                "aktivna": true,
+                "katastarska_opstina": "Banatsko Karađorđevo",
+                "broj_parcele": "1412",
+                "povrsina": 2.021061083984375,
+                "koordinate": "45.609647, 20.571147\n45.610187, 20.571567\n45.608900, 20.574920\n45.608368, 20.574502",
+                "boja": "#00cc00"
+            },
+            {
+                "aktivna": true,
+                "katastarska_opstina": "Banatsko Karađorđevo",
+                "broj_parcele": "1411",
+                "povrsina": 2.327164111328125,
+                "koordinate": "45.608900, 20.574920\n45.609512, 20.575404\n45.610806, 20.572053\n45.610187, 20.571567",
+                "boja": "#0007cc"
+            }
+        ]
+    }
+]

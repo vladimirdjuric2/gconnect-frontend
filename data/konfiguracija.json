@@ -1,0 +1,386 @@
+{
+    "devices": [
+        {
+            "id": "dev_1781458230156",
+            "type": "valve",
+            "name": "Zona1",
+            "arduinoId": "10.3.4.105",
+            "lat": 45.608899274163846,
+            "lng": 20.57233795523644,
+            "status": "closed",
+            "properties": {
+                "promer": "DN50",
+                "port_pin": "R1"
+            }
+        },
+        {
+            "id": "dev_1781458239704",
+            "type": "valve",
+            "name": "Zona2",
+            "arduinoId": "10.3.4.105",
+            "lat": 45.608954626333016,
+            "lng": 20.57238355278969,
+            "status": "closed",
+            "properties": {
+                "promer": "DN50",
+                "port_pin": "R2"
+            }
+        },
+        {
+            "id": "dev_1781458241018",
+            "type": "valve",
+            "name": "Zona3",
+            "arduinoId": "10.3.4.105",
+            "lat": 45.60901373113136,
+            "lng": 20.57244256138802,
+            "status": "closed",
+            "properties": {
+                "promer": "DN50",
+                "port_pin": "R3"
+            }
+        },
+        {
+            "id": "dev_1781458246638",
+            "type": "valve",
+            "name": "Zona4",
+            "arduinoId": "10.3.4.106",
+            "lat": 45.61224469867505,
+            "lng": 20.575494915246967,
+            "status": "closed",
+            "properties": {
+                "promer": "DN50",
+                "port_pin": "Zona4"
+            }
+        },
+        {
+            "id": "dev_1781458247988",
+            "type": "valve",
+            "name": "Zona5",
+            "arduinoId": "10.3.4.106",
+            "lat": 45.612177866240984,
+            "lng": 20.575725326153844,
+            "status": "closed",
+            "properties": {
+                "promer": "DN50",
+                "port_pin": "Zona5"
+            }
+        },
+        {
+            "id": "dev_1781464771682",
+            "type": "gnc",
+            "name": "GNC Kontroler 1",
+            "arduinoId": "10.3.4.106",
+            "lat": 45.612306614353926,
+            "lng": 20.575738996267322,
+            "status": "active",
+            "properties": {
+                "gnc_model": "GNC4444",
+                "port_pin": "R1",
+                "gnc_logic": "",
+                "panel_left": "438px",
+                "panel_top": "372px",
+                "remember_position": true
+            }
+        },
+        {
+            "id": "dev_1781520097456",
+            "type": "gnc",
+            "name": "GNC Kontroler 2",
+            "arduinoId": "10.3.4.105",
+            "lat": 45.6088345402018,
+            "lng": 20.5720429122448,
+            "status": "active",
+            "properties": {
+                "gnc_model": "GNC8884",
+                "port_pin": "",
+                "gnc_logic": "",
+                "remember_position": true,
+                "panel_left": "296px",
+                "panel_top": "622px"
+            }
+        },
+        {
+            "id": "dev_1781522308846",
+            "type": "gauge",
+            "name": "Merač pritiska 1",
+            "arduinoId": "10.3.4.150",
+            "lat": 45.60884673646123,
+            "lng": 20.57251632213593,
+            "status": "active",
+            "properties": {
+                "sensor_type": "4_20ma",
+                "transfer_function": "",
+                "port_pin": "A0",
+                "max_pressure": 4
+            }
+        },
+        {
+            "id": "dev_1781605849225",
+            "type": "flow_meter",
+            "name": "Merač protoka 1",
+            "arduinoId": "10.3.4.105",
+            "lat": 45.60882328211379,
+            "lng": 20.57244122028351,
+            "status": "active",
+            "properties": {
+                "sensor_type": "pulse",
+                "transfer_function": "",
+                "port_pin": "DI1"
+            },
+            "sensorType": "pulse",
+            "calibrationStep": 0.0022
+        },
+        {
+            "id": "dev_1781868206951",
+            "type": "pump",
+            "name": "Pumpa 1",
+            "arduinoId": "",
+            "lat": 45.60886643810549,
+            "lng": 20.572356730699543,
+            "status": "active",
+            "properties": {
+                "max_capacity": null,
+                "port_pin": ""
+            }
+        }
+    ],
+    "pipes": [
+        {
+            "id": "pipe_1781961389493",
+            "from": null,
+            "to": "dev_1781458241018",
+            "fromPin": null,
+            "toPin": "W_OUT",
+            "points": [
+                [
+                    45.60886362358529,
+                    20.57241573929787
+                ],
+                [
+                    45.60894289903775,
+                    20.572469457401677
+                ],
+                [
+                    45.60900810210561,
+                    20.572513639926914
+                ],
+                [
+                    45.60903249454638,
+                    20.572455972433094
+                ]
+            ],
+            "properties": {
+                "category": "main",
+                "thickness": 8,
+                "color": "#0055ff"
+            }
+        },
+        {
+            "id": "pipe_1781961506906",
+            "from": null,
+            "to": null,
+            "fromPin": null,
+            "toPin": null,
+            "points": [
+                [
+                    45.60906814501759,
+                    20.57236343622208
+                ],
+                [
+                    45.60899100788326,
+                    20.572309051300312
+                ],
+                [
+                    45.60886080906498,
+                    20.57221725583077
+                ],
+                [
+                    45.60880606117341,
+                    20.57237593226736
+                ]
+            ],
+            "properties": {
+                "category": "main",
+                "thickness": 8,
+                "color": "#0055ff"
+            }
+        },
+        {
+            "id": "pipe_1781961558812",
+            "from": null,
+            "to": "dev_1781458239704",
+            "fromPin": null,
+            "toPin": "W_OUT",
+            "points": [
+                [
+                    45.60894289903775,
+                    20.572469457401677
+                ],
+                [
+                    45.60894289903775,
+                    20.572469457401677
+                ],
+                [
+                    45.60897338976781,
+                    20.572396963834763
+                ]
+            ],
+            "properties": {
+                "category": "main",
+                "thickness": 8,
+                "color": "#0055ff"
+            }
+        },
+        {
+            "id": "pipe_1781961569092",
+            "from": null,
+            "to": "dev_1781458239704",
+            "fromPin": null,
+            "toPin": "W_IN",
+            "points": [
+                [
+                    45.60899100788326,
+                    20.572309051300312
+                ],
+                [
+                    45.60899100788326,
+                    20.572309051300312
+                ],
+                [
+                    45.60897338976781,
+                    20.572370141744617
+                ]
+            ],
+            "properties": {
+                "category": "main",
+                "thickness": 8,
+                "color": "#0055ff"
+            }
+        }
+    ],
+    "scenarios": [
+        {
+            "id": "sc_1781458457866",
+            "name": "Zalivanje10",
+            "steps": [
+                {
+                    "id": "step_1781459041866",
+                    "valves": [
+                        "dev_1781458230156",
+                        "dev_1781458239704"
+                    ],
+                    "volume": 10
+                },
+                {
+                    "id": "step_1781459080699",
+                    "valves": [
+                        "dev_1781458239704",
+                        "dev_1781458241018"
+                    ],
+                    "volume": 10
+                },
+                {
+                    "id": "step_1781459093718",
+                    "valves": [
+                        "dev_1781458230156",
+                        "dev_1781458241018"
+                    ],
+                    "volume": 10
+                },
+                {
+                    "id": "step_1781459106845",
+                    "valves": [
+                        "dev_1781458246638"
+                    ],
+                    "volume": 10
+                },
+                {
+                    "id": "step_1781459115303",
+                    "valves": [
+                        "dev_1781458247988"
+                    ],
+                    "volume": 10
+                }
+            ]
+        },
+        {
+            "id": "sc_1781459204641",
+            "name": "Zalivanje20",
+            "steps": []
+        }
+    ],
+    "wiring": [
+        {
+            "id": "wire_1781520527460",
+            "fromDeviceId": "dev_1781464771682",
+            "fromPin": "R1",
+            "toDeviceId": "dev_1781458246638",
+            "toPin": "IN",
+            "color": "#df49ff",
+            "signalName": "Relejni izlaz R1"
+        },
+        {
+            "id": "wire_1781520532990",
+            "fromDeviceId": "dev_1781464771682",
+            "fromPin": "R2",
+            "toDeviceId": "dev_1781458247988",
+            "toPin": "IN",
+            "color": "#df49ff",
+            "signalName": "Relejni izlaz R2"
+        },
+        {
+            "id": "wire_1781605941592",
+            "fromDeviceId": "dev_1781520097456",
+            "fromPin": "DI1",
+            "toDeviceId": "dev_1781605849225",
+            "toPin": "SIG",
+            "color": "#ef4444",
+            "signalName": "Impulsni senzorski ulaz DI1"
+        },
+        {
+            "id": "wire_1781952797668",
+            "fromDeviceId": "dev_1781520097456",
+            "fromPin": "R1",
+            "toDeviceId": "dev_1781868206951",
+            "toPin": "CTRL",
+            "color": "#ef4444",
+            "signalName": "Relejni izlaz R1"
+        },
+        {
+            "id": "wire_1781952806526",
+            "fromDeviceId": "dev_1781520097456",
+            "fromPin": "R2",
+            "toDeviceId": "dev_1781458230156",
+            "toPin": "IN",
+            "color": "#ef4444",
+            "signalName": "Relejni izlaz R2"
+        },
+        {
+            "id": "wire_1781952817829",
+            "fromDeviceId": "dev_1781520097456",
+            "fromPin": "R3",
+            "toDeviceId": "dev_1781458239704",
+            "toPin": "IN",
+            "color": "#ef4444",
+            "signalName": "Relejni izlaz R3"
+        },
+        {
+            "id": "wire_1781952834050",
+            "fromDeviceId": "dev_1781520097456",
+            "fromPin": "R4",
+            "toDeviceId": "dev_1781458241018",
+            "toPin": "IN",
+            "color": "#ef4444",
+            "signalName": "Relejni izlaz R4"
+        },
+        {
+            "id": "wire_1781952847306",
+            "fromDeviceId": "dev_1781520097456",
+            "fromPin": "A1",
+            "toDeviceId": "dev_1781522308846",
+            "toPin": "SIG",
+            "color": "#ef4444",
+            "signalName": "Analogni senzorski ulaz A1"
+        }
+    ]
+}
