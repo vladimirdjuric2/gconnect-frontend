@@ -29,9 +29,7 @@ export class Pump extends BaseComponent {
             <div class="device-icon-container ${colorClass}">
                 <div class="device-label">${this.name}</div>
                 <i class="fas fa-faucet-drip"></i>
-                <div class="compact-device-pins">
-                    <div class="compact-pin-socket pin-ctrl" data-device-id="${this.id}" data-pin-name="CTRL" data-pin-label="CTRL" onclick="window.editorManager.handlePinClick('${this.id}', 'CTRL', this, event)"></div>
-                </div>
+                ${this.generateSmallIconPinsHtml()}
             </div>
         `;
     }
@@ -81,12 +79,21 @@ export class Pump extends BaseComponent {
                         <div class="pin-label">CTRL</div>
                         <div class="pin-dot" style="width: 8px; height: 8px; background: #f59e0b; border-radius: 50%;"></div>
                     </div>
+
+                    <!-- Izlaz vode (desno sredina) -->
+                    <div class="pin-socket output-pin" 
+                         data-device-id="${this.id}" 
+                         data-pin-name="W_OUT"
+                         style="position: absolute; top: 50%; right: -10px; transform: translateY(-50%);">
+                        <div class="pin-label" style="right: 15px; left: auto;">OUT</div>
+                        <div class="pin-dot" style="width: 8px; height: 8px; background: #3b82f6; border-radius: 50%;"></div>
+                    </div>
                     
                     <!-- Napajanje VCC (gore desno) -->
                     <div class="pin-socket power-pin" 
                          data-device-id="${this.id}" 
                          data-pin-name="VCC"
-                         style="position: absolute; top: 10px; right: -10px;">
+                         style="position: absolute; top: 10px; left: 10px;">
                         <div class="pin-label">VCC</div>
                         <div class="pin-dot" style="width: 8px; height: 8px; background: #ef4444; border-radius: 50%;"></div>
                     </div>
@@ -95,7 +102,7 @@ export class Pump extends BaseComponent {
                     <div class="pin-socket ground-pin" 
                          data-device-id="${this.id}" 
                          data-pin-name="GND"
-                         style="position: absolute; bottom: 10px; right: -10px;">
+                         style="position: absolute; bottom: 10px; left: 10px;">
                         <div class="pin-label">GND</div>
                         <div class="pin-dot" style="width: 8px; height: 8px; background: #6b7280; border-radius: 50%;"></div>
                     </div>
@@ -189,6 +196,7 @@ export class Pump extends BaseComponent {
     getPins() {
         return [
             { name: 'CTRL', type: 'input', signal: 'control', required: true },
+            { name: 'W_OUT', type: 'water_output', color: '#3b82f6' },
             { name: 'VCC', type: 'power', signal: 'power', voltage: '220V' },
             { name: 'GND', type: 'ground', signal: 'ground' }
         ];

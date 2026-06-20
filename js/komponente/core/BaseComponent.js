@@ -18,6 +18,7 @@ export class BaseComponent {
         this.lng = data.lng;
         this.status = data.status || 'inactive';
         this.properties = data.properties || {};
+        this.properties.pinAngles = this.properties.pinAngles || {};
     }
     
     // ========================================================================
@@ -58,6 +59,65 @@ export class BaseComponent {
      */
     getPins() {
         return [];
+    }
+
+    /**
+     * Generiše CSS poziciju rotiranog noda (pina)
+     * @param {String} pinName Naziv pina (npr. 'OUT', 'VCC')
+     * @param {Number} defaultAngle Ugao (0-359) na kom se nalazi ako nije promenjeno
+     * @param {Number} radius Udaljenost od centra (default: 18 za postavljanje tačno na ivicu)
+     * @returns {String} In-line CSS stil za pozicioniranje
+     */
+    getPinStyle(pinName, defaultAngle, radius = 18) {
+        let angle = defaultAngle;
+        if (this.properties.pinAngles && typeof this.properties.pinAngles[pinName] !== 'undefined') {
+            angle = this.properties.pinAngles[pinName];
+        }
+        
+        // CSS transform logika: 
+        // 1. Odemo u centar ikonice (top: 50%, left: 50%)
+        // 2. Pomerimo transform-origin u centar pina: transform: translate(-50%, -50%)
+        // 3. Rotiramo se na traženi ugao oko centra ikonice
+        // 4. Pomerimo se duž Y ose za radijus: translateY(-radius)
+        // 5. Rotiramo kontranazad kako sam pin ne bi bio nakrivljen: rotate(-ugao)
+        
+        return `top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(${angle}deg) translateY(-${radius}px) rotate(-${angle}deg);`;
+    }
+
+    /**
+     * Automatski generiše HTML za sve pinove za prikaz male ikonice komponente.
+     * Pinovi se raspoređuju kružno oko komponente ukoliko im ugao nije ručno postavljen.
+     */
+    generateSmallIconPinsHtml() {
+        const pins = this.getPins();
+        if (!pins || pins.length === 0) return '';
+        
+        let html = '<div class="compact-device-pins">';
+        
+        pins.forEach((pin, index) => {
+            // Podrazumevani ugao kako bi se pinovi ravnomerno rasporedili u krug
+            const defaultAngle = index * (360 / pins.length);
+            
+            // Da li je vodeni pin
+            const isWater = pin.type === 'water_in' || pin.type === 'water_out' || pin.type === 'water_input' || pin.type === 'water_output';
+            const pinClass = isWater ? 'water-pin-socket' : 'compact-pin-socket';
+            const clickHandler = isWater ? 'handleWaterPinClick' : 'handlePinClick';
+            
+            // Oznaka na pinu se malo razlikuje za vodu
+            const label = isWater ? (pin.type === 'water_in' ? 'Ulaz vode' : 'Izlaz vode') : pin.name;
+            
+            html += `
+                <div class="${pinClass} pin-${pin.name.toLowerCase()}" 
+                     data-device-id="${this.id}" 
+                     data-pin-name="${pin.name}" 
+                     data-pin-label="${label}" 
+                     onclick="window.editorManager.${clickHandler}('${this.id}', '${pin.name}', this, event)" 
+                     style="${this.getPinStyle(pin.name, defaultAngle, 18)}"></div>
+            `;
+        });
+        
+        html += '</div>';
+        return html;
     }
     
     /**

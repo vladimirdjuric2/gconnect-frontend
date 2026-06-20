@@ -24,6 +24,7 @@ export class ElektroVentil extends BaseComponent {
                 <div class="device-icon-container device-valve-active valve-small-icon">
                     <div class="device-label">${this.name}</div>
                     <i class="fas fa-faucet"></i>
+                    ${this.generateSmallIconPinsHtml()}
                 </div>
             </div>
         `;

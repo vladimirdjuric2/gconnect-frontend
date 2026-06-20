@@ -36,14 +36,7 @@ export class Valve extends BaseComponent {
             <div class="device-icon-container ${colorClass}">
                 <div class="device-label">${this.name}</div>
                 <i class="fas fa-shower"></i>
-                <div class="compact-device-pins">
-                    <div class="compact-pin-socket pin-in" data-device-id="${this.id}" data-pin-name="IN" data-pin-label="IN" onclick="window.editorManager.handlePinClick('${this.id}', 'IN', this, event)"></div>
-                </div>
-                <!-- Plave tačke za vodu (ulaz i izlaz) koje su uvek vidljive -->
-                <div class="compact-water-pins">
-                    <div class="water-pin-socket water-in" data-device-id="${this.id}" data-pin-name="W_IN" data-pin-label="Ulaz vode" onclick="window.editorManager.handleWaterPinClick('${this.id}', 'W_IN', this, event)"></div>
-                    <div class="water-pin-socket water-out" data-device-id="${this.id}" data-pin-name="W_OUT" data-pin-label="Izlaz vode" onclick="window.editorManager.handleWaterPinClick('${this.id}', 'W_OUT', this, event)"></div>
-                </div>
+                ${this.generateSmallIconPinsHtml()}
             </div>
         `;
     }
@@ -201,6 +194,8 @@ export class Valve extends BaseComponent {
     
     getPins() {
         return [
+            { name: 'W_IN', type: 'water_input', required: true },
+            { name: 'W_OUT', type: 'water_output', required: true },
             { name: 'IN', type: 'input', signal: 'control', required: true },
             { name: 'VCC', type: 'power', signal: 'power', voltage: '24V' },
             { name: 'GND', type: 'ground', signal: 'ground' }

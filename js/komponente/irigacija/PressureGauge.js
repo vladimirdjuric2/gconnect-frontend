@@ -27,9 +27,7 @@ export class PressureGauge extends BaseComponent {
             <div class="device-icon-container device-gauge">
                 <div class="device-label">${this.name}</div>
                 <i class="fas fa-gauge-high"></i>
-                <div class="compact-device-pins">
-                    <div class="compact-pin-socket pin-sig" data-device-id="${this.id}" data-pin-name="SIG" data-pin-label="SIG" onclick="window.editorManager.handlePinClick('${this.id}', 'SIG', this, event)"></div>
-                </div>
+                ${this.generateSmallIconPinsHtml()}
             </div>
         `;
     }
@@ -205,6 +203,8 @@ export class PressureGauge extends BaseComponent {
     
     getPins() {
         return [
+            { name: 'W_IN', type: 'water_input', required: true },
+            { name: 'W_OUT', type: 'water_output', required: true },
             { name: 'SIG', type: 'signal', signal: 'analog', required: true },
             { name: 'VCC', type: 'power', signal: 'power', voltage: '5V' },
             { name: 'GND', type: 'ground', signal: 'ground' }

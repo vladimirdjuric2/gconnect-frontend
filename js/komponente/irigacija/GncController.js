@@ -32,6 +32,7 @@ export class GncController extends BaseComponent {
                 <div class="device-icon-container device-gnc-active gnc-small-icon">
                     <div class="device-label">${this.name}</div>
                     <i class="fas fa-microchip"></i>
+                    ${this.generateSmallIconPinsHtml()}
                 </div>
             </div>
         `;
