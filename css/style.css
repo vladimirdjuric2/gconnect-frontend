@@ -2302,13 +2302,8 @@ path.leaflet-interactive:focus {
     top: 0;
     left: 0;
     pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.25s ease;
-}
-
-.wiring-active .compact-device-pins,
-.gnc-hover-active .compact-device-pins {
-    opacity: 1;
+    opacity: 1; /* Uvek vidljivo */
+    z-index: 10000;
 }
 
 .compact-pin-socket {
@@ -2325,27 +2320,7 @@ path.leaflet-interactive:focus {
     z-index: 500;
 }
 
-/* Pozicioniranje pinova oko kružnog markera od 36px */
-.compact-pin-socket.pin-in {
-    top: -5px;
-    left: 14px; /* Centrirano na vrhu */
-}
-.compact-pin-socket.pin-ctrl {
-    top: -5px;
-    left: 14px; /* Centrirano na vrhu */
-}
-.compact-pin-socket.pin-gnd {
-    bottom: -5px;
-    left: 14px; /* Centrirano na dnu */
-}
-.compact-pin-socket.pin-vcc {
-    top: 14px;
-    left: -5px; /* Levo */
-}
-.compact-pin-socket.pin-sig {
-    top: 14px;
-    right: -5px; /* Desno */
-}
+/* Uklonjeno fiksno pozicioniranje pinova oko kružnog markera od 36px, sada se pozicioniraju dinamički u BaseComponent.js */
 
 /* Kompaktne plave tačke za vodu */
 .compact-water-pins {
@@ -2379,16 +2354,7 @@ path.leaflet-interactive:focus {
     background-color: #00ccff; /* Izuzetno uočljiva neon-plava boja na hover */
 }
 
-/* Pozicioniranje iznad ikonice (gornja ivica, levo i desno) */
-.water-pin-socket.water-in {
-    top: -8px;
-    left: 2px; /* Pomereno levo iznad ikonice */
-}
-
-.water-pin-socket.water-out {
-    top: -8px;
-    right: 2px; /* Pomereno desno iznad ikonice */
-}
+/* Uklonjeno fiksno pozicioniranje vodenih pinova, sada je dinamično */
 
 /* Tooltip za vodene pinove na hover */
 .water-pin-socket::after {
@@ -2863,4 +2829,124 @@ path.leaflet-interactive:focus {
     cursor: inherit !important;
 }
 
+/* ------------------------------------- */
+/* Custom Context Menus (Glassmorphic) */
+/* ------------------------------------- */
+.gnc-context-menu {
+    position: absolute;
+    z-index: 10000;
+    background: rgba(20, 20, 25, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+    padding: 6px;
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 200px;
+    opacity: 0;
+    transform: scale(0.95);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    pointer-events: none;
+}
+.gnc-context-menu.show {
+    display: flex;
+    opacity: 1;
+    transform: scale(1);
+    pointer-events: auto;
+}
+.ctx-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    color: #e0e0e0;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: transparent;
+    border: none;
+    text-align: left;
+    width: 100%;
+}
+.ctx-menu-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+}
+.ctx-menu-item.danger {
+    color: #ff6b6b;
+}
+.ctx-menu-item.danger:hover {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ff8787;
+}
+.ctx-menu-item i {
+    font-size: 15px;
+    width: 18px;
+    text-align: center;
+}
+.ctx-menu-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+    margin: 4px 0;
+}
 
+/* Pulsirajuća animacija za nod (teme) na hover */
+.node-marker-icon {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.node-marker-icon:hover {
+    transform: scale(1.3);
+    box-shadow: 0 0 15px 4px rgba(255, 204, 0, 0.8);
+    animation: pulseNode 1s infinite alternate ease-in-out;
+}
+@keyframes pulseNode {
+    0% { box-shadow: 0 0 10px 2px rgba(255, 204, 0, 0.6); }
+    100% { box-shadow: 0 0 20px 6px rgba(255, 204, 0, 1); }
+}
+
+/* Glassmorphic Popover za unos ugla noda */
+.gnc-popover {
+    position: absolute;
+    z-index: 10000;
+    width: 200px;
+    background: rgba(33, 37, 41, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    padding: 12px;
+    color: white;
+    font-size: 13px;
+    transform: translate(-50%, -100%);
+    margin-top: -15px; /* odmakni iznad komponente */
+}
+.gnc-popover::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%) rotate(45deg);
+    width: 12px;
+    height: 12px;
+    background: rgba(33, 37, 41, 0.85);
+    border-right: 1px solid rgba(255, 255, 255, 0.15);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+.gnc-popover .popover-header {
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #0dcaf0;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding-bottom: 4px;
+}
+.gnc-popover label {
+    display: block;
+    margin-bottom: 4px;
+    color: #ccc;
+}

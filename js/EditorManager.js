@@ -147,6 +147,78 @@ export class EditorManager {
             });
         }
         
+        // Meni za desni klik nad crevom (Context Menu)
+        this.pipeContextMenuTarget = null;
+        
+        const btnDeleteSeg = document.getElementById('ctx-btn-delete-segment');
+        if (btnDeleteSeg) {
+            btnDeleteSeg.addEventListener('click', () => {
+                if (this.pipeContextMenuTarget) {
+                    this.deletePipeSegment(this.pipeContextMenuTarget.pipe, this.pipeContextMenuTarget.latlng);
+                }
+                this.hidePipeContextMenu();
+            });
+        }
+        
+        const btnAddNode = document.getElementById('ctx-btn-add-node');
+        if (btnAddNode) {
+            btnAddNode.addEventListener('click', () => {
+                if (this.pipeContextMenuTarget) {
+                    this.insertPipeNode(this.pipeContextMenuTarget.pipe, this.pipeContextMenuTarget.latlng);
+                }
+                this.hidePipeContextMenu();
+            });
+        }
+        
+        const btnEditGeom = document.getElementById('ctx-btn-edit-geometry');
+        if (btnEditGeom) {
+            btnEditGeom.addEventListener('click', () => {
+                if (this.pipeContextMenuTarget) {
+                    this.pokreniIzmenuGeometrijeCreva(this.pipeContextMenuTarget.pipe);
+                }
+                this.hidePipeContextMenu();
+            });
+        }
+        
+        this.nodeContextMenuTarget = null;
+        
+        const btnDeleteNode = document.getElementById('ctx-btn-delete-node');
+        if (btnDeleteNode) {
+            btnDeleteNode.addEventListener('click', () => {
+                if (this.nodeContextMenuTarget) {
+                    this.nodeContextMenuTarget.execute();
+                }
+                this.hideNodeContextMenu();
+            });
+        }
+        
+        // Sakrivanje context menija klikom bilo gde drugde
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#pipe-context-menu')) {
+                this.hidePipeContextMenu();
+            }
+            if (!e.target.closest('#node-context-menu')) {
+                this.hideNodeContextMenu();
+            }
+            if (!e.target.closest('#device-context-menu') && !e.target.closest('#pin-rotate-modal')) {
+                this.hideDeviceContextMenu();
+            }
+        });
+        document.addEventListener('contextmenu', (e) => {
+            if (!e.target.closest('#pipe-context-menu') && !e.target.closest('path.leaflet-interactive')) {
+                this.hidePipeContextMenu();
+            }
+            if (!e.target.closest('#node-context-menu') && !e.target.closest('.custom-vertex-marker-edit')) {
+                this.hideNodeContextMenu();
+            }
+            if (!e.target.closest('#device-context-menu') && !e.target.closest('.leaflet-marker-icon')) {
+                this.hideDeviceContextMenu();
+            }
+        });
+        this.map.on('click', () => { this.hidePipeContextMenu(); this.hideNodeContextMenu(); this.hideDeviceContextMenu(); });
+        this.map.on('dragstart', () => { this.hidePipeContextMenu(); this.hideNodeContextMenu(); this.hideDeviceContextMenu(); });
+        this.map.on('zoomstart', () => { this.hidePipeContextMenu(); this.hideNodeContextMenu(); this.hideDeviceContextMenu(); });
+
         // Slušaj klik na samu mapu (za postavljanje novih uređaja)
         this.map.on('click', (e) => this.onMapClick(e));
         
@@ -1892,11 +1964,16 @@ export class EditorManager {
             this.openDeviceCharacteristicsModal(device, marker);
         });
 
-        // --- DOGAĐAJ: DESNI KLIK NA MARKER (Otvara PRIHVATI/ODBACI ako je u toku selekcija ventila) ---
+        // --- DOGAĐAJ: DESNI KLIK NA MARKER (Otvara kontekstni meni) ---
         marker.on('contextmenu', (e) => {
             if (this.isSelectingValvesForScenario) {
                 if (e) L.DomEvent.stopPropagation(e);
                 this.showSelectionContextMenu(e.latlng);
+                return;
+            }
+            if (this.isEditMode) {
+                if (e) L.DomEvent.stopPropagation(e);
+                this.showDeviceContextMenu(e.originalEvent, device);
             }
         });
     }
@@ -2059,6 +2136,234 @@ export class EditorManager {
             
             this.openPipeCharacteristicsModal(pipe, polyline);
         });
+
+        // Desni klik za brisanje segmenta u Edit modu
+        polyline.on('contextmenu', (e) => {
+            if (this.isAnyDrawingOrMeasuringActive()) return;
+            if (!this.isEditMode) return;
+            
+            if (e && e.originalEvent) {
+                e.originalEvent._handledByLayer = true;
+                L.DomEvent.stopPropagation(e.originalEvent);
+                if (e.originalEvent.stopPropagation) {
+                    e.originalEvent.stopPropagation();
+                }
+            }
+            L.DomEvent.stopPropagation(e);
+            
+            this.showPipeContextMenu(e.originalEvent, pipe, e.latlng);
+        });
+    }
+
+    /**
+     * Prikazuje custom kontekstni meni za crevo
+     */
+    showPipeContextMenu(mouseEvent, pipe, latlng) {
+        const menu = document.getElementById('pipe-context-menu');
+        if (!menu) return;
+        
+        // Sakrij ako je već otvoren drugi
+        this.hidePipeContextMenu();
+        
+        this.pipeContextMenuTarget = { pipe, latlng };
+        
+        menu.style.left = mouseEvent.clientX + 'px';
+        menu.style.top = mouseEvent.clientY + 'px';
+        menu.classList.add('show');
+    }
+
+    /**
+     * Sakriva custom kontekstni meni za crevo
+     */
+    hidePipeContextMenu() {
+        const menu = document.getElementById('pipe-context-menu');
+        if (menu) {
+            menu.classList.remove('show');
+        }
+        this.pipeContextMenuTarget = null;
+    }
+
+    /**
+     * Prikazuje custom kontekstni meni za nod
+     */
+    showNodeContextMenu(mouseEvent, executeCallback) {
+        const menu = document.getElementById('node-context-menu');
+        if (!menu) return;
+        
+        this.hideNodeContextMenu();
+        this.hidePipeContextMenu();
+        
+        this.nodeContextMenuTarget = { execute: executeCallback };
+        
+        menu.style.left = mouseEvent.clientX + 'px';
+        menu.style.top = mouseEvent.clientY + 'px';
+        menu.classList.add('show');
+    }
+
+    /**
+     * Sakriva custom kontekstni meni za nod
+     */
+    hideNodeContextMenu() {
+        const menu = document.getElementById('node-context-menu');
+        if (menu) {
+            menu.classList.remove('show');
+        }
+        this.nodeContextMenuTarget = null;
+    }
+
+    /**
+     * Prikazuje custom kontekstni meni za uređaje
+     * (Rotacija pinova je uklonjena jer se sada automatski iscrtavaju duž oboda i prate linije)
+     */
+    showDeviceContextMenu(mouseEvent, device) {
+        // Trenutno prazno - spremno za buduće opcije uređaja
+    }
+
+    /**
+     * Sakriva custom kontekstni meni za uređaje
+     */
+    hideDeviceContextMenu() {
+        const menu = document.getElementById('device-context-menu');
+        if (menu) {
+            menu.classList.remove('show');
+        }
+    }
+
+    /**
+     * Dodaje novi prelom (nod) u crevo tačno na mestu desnog klika
+     */
+    insertPipeNode(pipe, clickLatLng) {
+        if (!pipe.points || pipe.points.length < 2) return;
+        
+        let closestSegIdx = -1;
+        let minProjDist = Infinity;
+        let insertedLatLng = clickLatLng;
+        const p = this.map.latLngToContainerPoint(clickLatLng);
+        
+        for (let i = 0; i < pipe.points.length - 1; i++) {
+            const pt1 = L.latLng(pipe.points[i][0], pipe.points[i][1]);
+            const pt2 = L.latLng(pipe.points[i+1][0], pipe.points[i+1][1]);
+            const p1 = this.map.latLngToContainerPoint(pt1);
+            const p2 = this.map.latLngToContainerPoint(pt2);
+            
+            const dx = p2.x - p1.x;
+            const dy = p2.y - p1.y;
+            const lenSq = dx * dx + dy * dy;
+            if (lenSq === 0) continue;
+            
+            let t = ((p.x - p1.x) * dx + (p.y - p1.y) * dy) / lenSq;
+            t = Math.max(0, Math.min(1, t));
+            
+            const projX = p1.x + t * dx;
+            const projY = p1.y + t * dy;
+            const projPoint = L.point(projX, projY);
+            const projDist = p.distanceTo(projPoint);
+            
+            if (projDist < minProjDist) {
+                minProjDist = projDist;
+                closestSegIdx = i;
+                insertedLatLng = this.map.containerPointToLatLng(projPoint);
+            }
+        }
+
+        if (closestSegIdx !== -1) {
+            // Ubacujemo novu tačku
+            pipe.points.splice(closestSegIdx + 1, 0, [insertedLatLng.lat, insertedLatLng.lng]);
+            this.drawPipeLine(pipe);
+            this.updatePipeJointMarkers();
+            this.saveLayout();
+            
+            // Automatski otvaramo izmenu geometrije da bi korisnik video novi nod
+            this.pokreniIzmenuGeometrijeCreva(pipe);
+        }
+    }
+
+    /**
+     * Briše samo segment creva između dva najbliža noda (deleći crevo na dva ako je u sredini)
+     */
+    deletePipeSegment(pipe, clickLatLng) {
+        if (!pipe.points || pipe.points.length < 2) return;
+        
+        let closestSegIdx = -1;
+        let minProjDist = Infinity;
+        const p = this.map.latLngToContainerPoint(clickLatLng);
+        
+        for (let i = 0; i < pipe.points.length - 1; i++) {
+            const pt1 = L.latLng(pipe.points[i][0], pipe.points[i][1]);
+            const pt2 = L.latLng(pipe.points[i+1][0], pipe.points[i+1][1]);
+            const p1 = this.map.latLngToContainerPoint(pt1);
+            const p2 = this.map.latLngToContainerPoint(pt2);
+            
+            const dx = p2.x - p1.x;
+            const dy = p2.y - p1.y;
+            const lenSq = dx * dx + dy * dy;
+            if (lenSq === 0) continue;
+            
+            let t = ((p.x - p1.x) * dx + (p.y - p1.y) * dy) / lenSq;
+            t = Math.max(0, Math.min(1, t));
+            
+            const projX = p1.x + t * dx;
+            const projY = p1.y + t * dy;
+            const projDist = p.distanceTo(L.point(projX, projY));
+            
+            if (projDist < minProjDist) {
+                minProjDist = projDist;
+                closestSegIdx = i;
+            }
+        }
+
+        if (closestSegIdx === -1) return;
+
+        const part1Points = pipe.points.slice(0, closestSegIdx + 1);
+        const part2Points = pipe.points.slice(closestSegIdx + 1);
+
+        const keepPart1 = part1Points.length >= 2;
+        const keepPart2 = part2Points.length >= 2;
+
+        // Ukloni staru poliliniju sa mape pre pravljenja novih
+        if (this.pipeLines[pipe.id]) {
+            if (this.pipesLayer) this.pipesLayer.removeLayer(this.pipeLines[pipe.id]);
+            else this.map.removeLayer(this.pipeLines[pipe.id]);
+            delete this.pipeLines[pipe.id];
+        }
+
+        if (!keepPart1 && !keepPart2) {
+            this.pipes = this.pipes.filter(p => p.id !== pipe.id);
+        } else if (keepPart1 && keepPart2) {
+            const oldTo = pipe.to;
+            const oldToPin = pipe.toPin;
+            
+            pipe.points = part1Points;
+            pipe.to = null;
+            pipe.toPin = null;
+            
+            const newPipe = {
+                id: 'pipe_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+                type: 'pipe',
+                points: part2Points,
+                from: null,
+                fromPin: null,
+                to: oldTo,
+                toPin: oldToPin,
+                properties: JSON.parse(JSON.stringify(pipe.properties || {}))
+            };
+            this.pipes.push(newPipe);
+            this.drawPipeLine(pipe);
+            this.drawPipeLine(newPipe);
+        } else if (keepPart1 && !keepPart2) {
+            pipe.points = part1Points;
+            pipe.to = null;
+            pipe.toPin = null;
+            this.drawPipeLine(pipe);
+        } else if (!keepPart1 && keepPart2) {
+            pipe.points = part2Points;
+            pipe.from = null;
+            pipe.fromPin = null;
+            this.drawPipeLine(pipe);
+        }
+
+        this.updatePipeJointMarkers();
+        this.saveLayout();
     }
     
     /**
@@ -2070,7 +2375,7 @@ export class EditorManager {
                 if (pipe.from === deviceId) {
                     const fromDev = this.devices.find(d => d.id === pipe.from);
                     if (fromDev && pipe.points && pipe.points.length > 0) {
-                        if (fromDev.type === 'valve' && pipe.fromPin) {
+                        if (pipe.fromPin) {
                             const pinLatLng = this.getWaterPinLatLng(pipe.from, pipe.fromPin);
                             if (pinLatLng) {
                                 pipe.points[0] = [pinLatLng.lat, pinLatLng.lng];
@@ -2085,7 +2390,7 @@ export class EditorManager {
                 if (pipe.to === deviceId) {
                     const toDev = this.devices.find(d => d.id === pipe.to);
                     if (toDev && pipe.points && pipe.points.length > 0) {
-                        if (toDev.type === 'valve' && pipe.toPin) {
+                        if (pipe.toPin) {
                             const pinLatLng = this.getWaterPinLatLng(pipe.to, pipe.toPin);
                             if (pinLatLng) {
                                 pipe.points[pipe.points.length - 1] = [pinLatLng.lat, pinLatLng.lng];
@@ -2102,6 +2407,9 @@ export class EditorManager {
                 }
             }
         });
+        
+        // Ažuriraj rotaciju pinova za vodu na ovoj komponenti
+        this.updatePinsPosition(deviceId);
         
         // Ažuriraj slobodne zglobove creva kako bi pratili kretanje u realnom vremenu
         this.updatePipeJointMarkers();
@@ -2829,7 +3137,7 @@ export class EditorManager {
 
                 const kruzicIcon = L.divIcon({
                     className: 'custom-vertex-marker-edit',
-                    html: `<div style="width: 14px; height: 14px; background-color: #ffffff; border: 2.5px solid ${color}; border-radius: 50%; box-shadow: 0 1px 5px rgba(0,0,0,0.5); cursor: move;"></div>`,
+                    html: `<div class="node-marker-icon" style="width: 14px; height: 14px; background-color: #ffffff; border: 2.5px solid ${color}; border-radius: 50%; box-shadow: 0 1px 5px rgba(0,0,0,0.5); cursor: move;"></div>`,
                     iconSize: [14, 14],
                     iconAnchor: [7, 7]
                 });
@@ -2857,105 +3165,49 @@ export class EditorManager {
                         return;
                     }
                     
-                    // Pokrećemo Bootstrap modal za potvrdu brisanja
-                    const modalEl = document.getElementById('modalObrisiTackuCreva');
-                    if (modalEl) {
-                        const modalObj = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-                        
-                        // Konfigurišemo dugme za potvrdu brisanja
-                        const confirmBtn = document.getElementById('btn-potvrdi-brisanje-tacke');
-                        const newConfirmBtn = confirmBtn.cloneNode(true);
-                        confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
-                        
-                        newConfirmBtn.addEventListener('click', () => {
-                            // Uklanjamo tačke iz niza (odozada ka napred da ne poremetimo indekse)
-                            indices.sort((a, b) => b - a).forEach(idx => {
-                                trenutneKoordinate.splice(idx, 1);
-                                if (this.aktivnoUredjivanjeCreva && this.aktivnoUredjivanjeCreva.connectedPipesMap) {
-                                    this.aktivnoUredjivanjeCreva.connectedPipesMap.splice(idx, 1);
-                                }
-                            });
-                            
-                            // Ponovo određujemo from/to povezivanje u slučaju da smo obrisali prvu ili poslednju tačku
-                            let fromId = null;
-                            let toId = null;
-                            let fromPin = null;
-                            let toPin = null;
-                            
-                            const firstPt = trenutneKoordinate[0];
-                            const lastPt = trenutneKoordinate[trenutneKoordinate.length - 1];
-                            
-                            const snappedFrom = this.getSnappedDevicePoint(firstPt);
-                            if (snappedFrom) {
-                                fromId = snappedFrom.deviceId;
-                                fromPin = snappedFrom.pinName;
-                                trenutneKoordinate[0] = L.latLng(snappedFrom.lat, snappedFrom.lng);
+                    this.showNodeContextMenu(e.originalEvent, () => {
+                        // Uklanjamo tačke iz niza (odozada ka napred da ne poremetimo indekse)
+                        indices.sort((a, b) => b - a).forEach(idx => {
+                            trenutneKoordinate.splice(idx, 1);
+                            if (this.aktivnoUredjivanjeCreva && this.aktivnoUredjivanjeCreva.connectedPipesMap) {
+                                this.aktivnoUredjivanjeCreva.connectedPipesMap.splice(idx, 1);
                             }
-                            
-                            const snappedTo = this.getSnappedDevicePoint(lastPt);
-                            if (snappedTo) {
-                                toId = snappedTo.deviceId;
-                                toPin = snappedTo.pinName;
-                                trenutneKoordinate[trenutneKoordinate.length - 1] = L.latLng(snappedTo.lat, snappedTo.lng);
-                            }
-                            
-                            pipe.from = fromId;
-                            pipe.to = toId;
-                            pipe.fromPin = fromPin;
-                            pipe.toPin = toPin;
-                            
-                            // Osvežavamo poliliniju na mapi
-                            this.geomEditPoly.setLatLngs(trenutneKoordinate);
-                            
-                            // Ponovo iscrtavamo markere temena
-                            iscrtajMarkerTemena();
-                            
-                            // Sakrij modal
-                            modalObj.hide();
                         });
                         
-                        modalObj.show();
-                    } else {
-                        // Fallback na klasični confirm ako modal ne postoji u DOM-u
-                        if (confirm("Da li želite da obrišete ovu tačku sa creva za vodu?")) {
-                            indices.sort((a, b) => b - a).forEach(idx => {
-                                trenutneKoordinate.splice(idx, 1);
-                                if (this.aktivnoUredjivanjeCreva && this.aktivnoUredjivanjeCreva.connectedPipesMap) {
-                                    this.aktivnoUredjivanjeCreva.connectedPipesMap.splice(idx, 1);
-                                }
-                            });
-                            
-                            let fromId = null;
-                            let toId = null;
-                            let fromPin = null;
-                            let toPin = null;
-                            
-                            const firstPt = trenutneKoordinate[0];
-                            const lastPt = trenutneKoordinate[trenutneKoordinate.length - 1];
-                            
-                            const snappedFrom = this.getSnappedDevicePoint(firstPt);
-                            if (snappedFrom) {
-                                fromId = snappedFrom.deviceId;
-                                fromPin = snappedFrom.pinName;
-                                trenutneKoordinate[0] = L.latLng(snappedFrom.lat, snappedFrom.lng);
-                            }
-                            
-                            const snappedTo = this.getSnappedDevicePoint(lastPt);
-                            if (snappedTo) {
-                                toId = snappedTo.deviceId;
-                                toPin = snappedTo.pinName;
-                                trenutneKoordinate[trenutneKoordinate.length - 1] = L.latLng(snappedTo.lat, snappedTo.lng);
-                            }
-                            
-                            pipe.from = fromId;
-                            pipe.to = toId;
-                            pipe.fromPin = fromPin;
-                            pipe.toPin = toPin;
-                            
-                            this.geomEditPoly.setLatLngs(trenutneKoordinate);
-                            iscrtajMarkerTemena();
+                        // Ponovo određujemo from/to povezivanje u slučaju da smo obrisali prvu ili poslednju tačku
+                        let fromId = null;
+                        let toId = null;
+                        let fromPin = null;
+                        let toPin = null;
+                        
+                        const firstPt = trenutneKoordinate[0];
+                        const lastPt = trenutneKoordinate[trenutneKoordinate.length - 1];
+                        
+                        const snappedFrom = this.getSnappedDevicePoint(firstPt);
+                        if (snappedFrom) {
+                            fromId = snappedFrom.deviceId;
+                            fromPin = snappedFrom.pinName;
+                            trenutneKoordinate[0] = L.latLng(snappedFrom.lat, snappedFrom.lng);
                         }
-                    }
+                        
+                        const snappedTo = this.getSnappedDevicePoint(lastPt);
+                        if (snappedTo) {
+                            toId = snappedTo.deviceId;
+                            toPin = snappedTo.pinName;
+                            trenutneKoordinate[trenutneKoordinate.length - 1] = L.latLng(snappedTo.lat, snappedTo.lng);
+                        }
+                        
+                        pipe.from = fromId;
+                        pipe.to = toId;
+                        pipe.fromPin = fromPin;
+                        pipe.toPin = toPin;
+                        
+                        // Osvežavamo poliliniju na mapi
+                        this.geomEditPoly.setLatLngs(trenutneKoordinate);
+                        
+                        // Ponovo iscrtavamo markere temena
+                        iscrtajMarkerTemena();
+                    });
                 });
 
                 marker.on('drag', (e) => {
@@ -4623,9 +4875,158 @@ export class EditorManager {
             }
         }
 
-        // Ako panel nije aktivan, žica ide iz samog centra GNC-a na mapi
+        // Za GNC komponentu žica ide iz samog centra na mapi
         const device = this.devices.find(d => d.id === deviceId);
-        return device ? L.latLng(device.lat, device.lng) : null;
+        if (!device) return null;
+        
+        if (device.type === 'gnc') {
+            return L.latLng(device.lat, device.lng);
+        }
+        
+        // Za ostale komponente, računamo poziciju pina na kružnici
+        const devLatLng = L.latLng(device.lat, device.lng);
+        const zoom = this.map.getZoom();
+        const devPoint = this.map.project(devLatLng, zoom);
+        
+        const angles = this.getResolvedPinAngles(deviceId);
+        let angle = angles[pinName];
+        if (angle === undefined) angle = 0;
+        
+        const rad = (angle - 90) * Math.PI / 180;
+        const radius = 18;
+        const offsetX = Math.cos(rad) * radius;
+        const offsetY = Math.sin(rad) * radius;
+        
+        const targetDevPoint = L.point(devPoint.x + offsetX, devPoint.y + offsetY);
+        return this.map.unproject(targetDevPoint, zoom);
+    }
+
+    /**
+     * Vraća asocijativni niz { pinName: ugao } gde su uglovi ravnomerno raspoređeni
+     * i izbegavaju preklapanja.
+     */
+    getResolvedPinAngles(deviceId) {
+        const device = this.devices.find(d => d.id === deviceId);
+        if (!device) return {};
+        
+        const componentInstance = ComponentRegistry.create(device.type, device);
+        if (!componentInstance) return {};
+        
+        const pins = componentInstance.getPins();
+        const result = {};
+        const placedAngles = [];
+        
+        // Prvo dodeljujemo uglove onim pinovima koji imaju prave konekcije
+        const connectedPins = [];
+        const unconnectedPins = [];
+        
+        pins.forEach((pin, index) => {
+            const angle = this.getPinAngle(deviceId, pin.name);
+            if (angle !== null) connectedPins.push({ pin, desiredAngle: angle });
+            else unconnectedPins.push({ pin, index });
+        });
+        
+        // Dodajemo povezane pinove (uz blago guranje ako ima preklapanja)
+        connectedPins.forEach(item => {
+            let angle = item.desiredAngle;
+            let attempts = 0;
+            while (placedAngles.some(a => this._angleDiff(a, angle) < 25) && attempts < 15) {
+                angle = (angle + 15) % 360;
+                attempts++;
+            }
+            placedAngles.push(angle);
+            result[item.pin.name] = angle;
+        });
+        
+        // Zatim dodeljujemo slobodne pinove, tako da popune rupe
+        unconnectedPins.forEach(item => {
+            // Osnovni raspored za nepovezane zavisi od ukupnog broja pinova
+            let angle = item.index * (360 / pins.length);
+            let attempts = 0;
+            while (placedAngles.some(a => this._angleDiff(a, angle) < 25) && attempts < 15) {
+                angle = (angle + 15) % 360;
+                attempts++;
+            }
+            placedAngles.push(angle);
+            result[item.pin.name] = angle;
+        });
+        
+        return result;
+    }
+    
+    _angleDiff(a1, a2) {
+        let diff = Math.abs(a1 - a2) % 360;
+        return diff > 180 ? 360 - diff : diff;
+    }
+
+    /**
+     * Vraća ugao (u stepenima za CSS) pina na osnovu linija koje dolaze/odlaze iz njega
+     */
+    getPinAngle(deviceId, pinName) {
+        if (!this.map) return null;
+        const device = this.devices.find(d => d.id === deviceId);
+        if (!device || device.type === 'gnc') return null;
+        
+        const p1 = this.map.project(L.latLng(device.lat, device.lng), this.map.getZoom());
+        let targetPoint = null;
+        
+        // 1. Proveri elektricne zice
+        if (this.wiring) {
+            for (let wire of this.wiring) {
+                if (wire.fromDeviceId === deviceId && wire.fromPin === pinName) {
+                    if (wire.points && wire.points.length > 1) {
+                        targetPoint = this.map.project(L.latLng(wire.points[1][0], wire.points[1][1]), this.map.getZoom());
+                    } else if (wire.toDeviceId) {
+                        const targetDev = this.devices.find(d => d.id === wire.toDeviceId);
+                        if (targetDev) targetPoint = this.map.project(L.latLng(targetDev.lat, targetDev.lng), this.map.getZoom());
+                    }
+                    break;
+                }
+                if (wire.toDeviceId === deviceId && wire.toPin === pinName) {
+                    if (wire.points && wire.points.length > 1) {
+                        targetPoint = this.map.project(L.latLng(wire.points[wire.points.length - 2][0], wire.points[wire.points.length - 2][1]), this.map.getZoom());
+                    } else if (wire.fromDeviceId) {
+                        const targetDev = this.devices.find(d => d.id === wire.fromDeviceId);
+                        if (targetDev) targetPoint = this.map.project(L.latLng(targetDev.lat, targetDev.lng), this.map.getZoom());
+                    }
+                    break;
+                }
+            }
+        }
+        
+        // 2. Proveri vodene cevi
+        if (!targetPoint && this.pipes) {
+            for (let pipe of this.pipes) {
+                if (pipe.from === deviceId && pipe.fromPin === pinName) {
+                    if (pipe.points && pipe.points.length > 1) {
+                        targetPoint = this.map.project(L.latLng(pipe.points[1][0], pipe.points[1][1]), this.map.getZoom());
+                    } else if (pipe.to) {
+                        const targetDev = this.devices.find(d => d.id === pipe.to);
+                        if (targetDev) targetPoint = this.map.project(L.latLng(targetDev.lat, targetDev.lng), this.map.getZoom());
+                    }
+                    break;
+                }
+                if (pipe.to === deviceId && pipe.toPin === pinName) {
+                    if (pipe.points && pipe.points.length > 1) {
+                        targetPoint = this.map.project(L.latLng(pipe.points[pipe.points.length - 2][0], pipe.points[pipe.points.length - 2][1]), this.map.getZoom());
+                    } else if (pipe.from) {
+                        const targetDev = this.devices.find(d => d.id === pipe.from);
+                        if (targetDev) targetPoint = this.map.project(L.latLng(targetDev.lat, targetDev.lng), this.map.getZoom());
+                    }
+                    break;
+                }
+            }
+        }
+        
+        if (targetPoint) {
+            let angleRad = Math.atan2(targetPoint.y - p1.y, targetPoint.x - p1.x);
+            let angleDeg = angleRad * 180 / Math.PI;
+            let cssAngle = angleDeg + 90;
+            if (cssAngle < 0) cssAngle += 360;
+            return cssAngle;
+        }
+        
+        return null;
     }
 
     /**
@@ -4637,30 +5038,10 @@ export class EditorManager {
     }
 
     /**
-     * Nalazi tačnu geografsku LatLng poziciju za određeni vodovodni pin ventila
+     * Nalazi tačnu geografsku LatLng poziciju za vodeni pin
      */
     getWaterPinLatLng(deviceId, pinName) {
-        if (!this.map) return null;
-        
-        // Pouzdan, brz i precizan čisto matematički proračun na osnovu koordinata uređaja (izbegava zavisnost od DOM layout-a tokom prevlačenja).
-        const device = this.devices.find(d => d.id === deviceId);
-        if (!device) return null;
-        
-        const devLatLng = L.latLng(device.lat, device.lng);
-        const zoom = this.map.getZoom();
-        const devPoint = this.map.project(devLatLng, zoom);
-        
-        let offsetX = 0;
-        let offsetY = -20; // 20px iznad centra (odgovara top: -8px za pin prečnika 12px na ikoni od 36px)
-        if (pinName === 'W_IN') {
-            offsetX = -10; // Pomereno levo
-        } else if (pinName === 'W_OUT') {
-            offsetX = 10; // Pomereno desno
-        }
-        
-        const targetPoint = L.point(devPoint.x + offsetX, devPoint.y + offsetY);
-        const targetLatLng = this.map.unproject(targetPoint, zoom);
-        return targetLatLng;
+        return this.getPinLatLng(deviceId, pinName);
     }
 
     /**
@@ -5305,89 +5686,24 @@ export class EditorManager {
         if (!marker || !marker._icon) return;
 
         const el = marker._icon;
-        const pinElements = el.querySelectorAll('.compact-pin-socket');
+        const pinElements = el.querySelectorAll('.compact-pin-socket, .water-pin-socket');
         if (!pinElements || pinElements.length === 0) return;
 
-        const deviceLatLng = L.latLng(device.lat, device.lng);
+        const angles = this.getResolvedPinAngles(deviceId);
 
-        // Pronađi sve žice povezane sa ovim uređajem
-        const deviceWires = this.wiring.filter(w => w.fromDeviceId === deviceId || w.toDeviceId === deviceId);
-
-        // Grupiši povezane pinove po ciljnom uređaju
-        const connectedPins = [];
-        deviceWires.forEach(wire => {
-            const isFrom = wire.fromDeviceId === deviceId;
-            const pinName = isFrom ? wire.fromPin : wire.toPin;
-            const targetId = isFrom ? wire.toDeviceId : wire.fromDeviceId;
-            const targetDev = this.devices.find(d => d.id === targetId);
-            
-            if (targetDev) {
-                connectedPins.push({
-                    pinName: pinName,
-                    targetId: targetId,
-                    targetLatlng: L.latLng(targetDev.lat, targetDev.lng)
-                });
-            }
-        });
-
-        // Grupišemo po targetId da bismo znali koliko pinova ide ka istom uređaju
-        const targetsMap = {};
-        connectedPins.forEach(p => {
-            if (!targetsMap[p.targetId]) {
-                targetsMap[p.targetId] = [];
-            }
-            targetsMap[p.targetId].push(p);
-        });
-
-        // Preračunaj pozicije za svaki povezani pin
-        const pinPositions = {}; // pinName -> {x, y}
-        const R = 18; // poluprečnik od 36px kružnog markera
-
-        Object.keys(targetsMap).forEach(targetId => {
-            const pinsList = targetsMap[targetId];
-            const targetLatlng = pinsList[0].targetLatlng;
-
-            // Izračunaj bazni ugao na ekranu
-            const p1 = this.map.latLngToContainerPoint(deviceLatLng);
-            const p2 = this.map.latLngToContainerPoint(targetLatlng);
-            const baseAngle = Math.atan2(p2.y - p1.y, p2.x - p1.x); // u radijanima
-
-            const count = pinsList.length;
-            pinsList.forEach((pinInfo, idx) => {
-                let offset = 0;
-                if (count === 2) {
-                    // dva pina ka istom cilju: -20 i +20 stepeni
-                    offset = (idx === 0) ? -20 * Math.PI / 180 : 20 * Math.PI / 180;
-                } else if (count === 3) {
-                    // tri pina: -25, 0, +25 stepeni
-                    if (idx === 0) offset = -25 * Math.PI / 180;
-                    else if (idx === 2) offset = 25 * Math.PI / 180;
-                }
-
-                const angle = baseAngle + offset;
-                const x = 18 + R * Math.cos(angle) - 4.5;
-                const y = 18 + R * Math.sin(angle) - 4.5;
-
-                pinPositions[pinInfo.pinName] = { x: x, y: y };
-            });
-        });
-
-        // Primeni pozicije na DOM elemente
         pinElements.forEach(pinEl => {
             const pinName = pinEl.getAttribute('data-pin-name');
-            if (pinPositions[pinName]) {
-                // Postavi inline stilove
-                pinEl.style.left = `${pinPositions[pinName].x}px`;
-                pinEl.style.top = `${pinPositions[pinName].y}px`;
-                pinEl.style.bottom = 'auto'; // poništi CSS bottom pozicioniranje ako postoji
-                pinEl.style.right = 'auto';  // poništi CSS right pozicioniranje ako postoji
-            } else {
-                // Resetuj na CSS default
-                pinEl.style.left = '';
-                pinEl.style.top = '';
-                pinEl.style.bottom = '';
-                pinEl.style.right = '';
-            }
+            const radius = 18; // Udaljenost od centra (ivica kruga)
+            
+            let angle = angles[pinName];
+            if (angle === undefined) angle = 0;
+            
+            // Postavi inline stilove sa CSS transformacijom
+            pinEl.style.top = '50%';
+            pinEl.style.left = '50%';
+            pinEl.style.transform = `translate(-50%, -50%) rotate(${angle}deg) translateY(-${radius}px) rotate(-${angle}deg)`;
+            pinEl.style.bottom = 'auto'; // poništi stari CSS
+            pinEl.style.right = 'auto';  // poništi stari CSS
         });
     }
 }
