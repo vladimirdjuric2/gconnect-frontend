@@ -5,12 +5,13 @@
             "type": "valve",
             "name": "Zona1",
             "arduinoId": "10.3.4.105",
-            "lat": 45.608899274163846,
-            "lng": 20.57233795523644,
+            "lat": 45.60891053223659,
+            "lng": 20.572386234998707,
             "status": "closed",
             "properties": {
                 "promer": "DN50",
-                "port_pin": "R1"
+                "port_pin": "R1",
+                "pinAngles": {}
             }
         },
         {
@@ -18,12 +19,13 @@
             "type": "valve",
             "name": "Zona2",
             "arduinoId": "10.3.4.105",
-            "lat": 45.608954626333016,
-            "lng": 20.57238355278969,
+            "lat": 45.60896213170769,
+            "lng": 20.572422444820408,
             "status": "closed",
             "properties": {
                 "promer": "DN50",
-                "port_pin": "R2"
+                "port_pin": "R2",
+                "pinAngles": {}
             }
         },
         {
@@ -31,12 +33,13 @@
             "type": "valve",
             "name": "Zona3",
             "arduinoId": "10.3.4.105",
-            "lat": 45.60901373113136,
-            "lng": 20.57244256138802,
+            "lat": 45.60901091661855,
+            "lng": 20.572454631328586,
             "status": "closed",
             "properties": {
                 "promer": "DN50",
-                "port_pin": "R3"
+                "port_pin": "R3",
+                "pinAngles": {}
             }
         },
         {
@@ -49,7 +52,8 @@
             "status": "closed",
             "properties": {
                 "promer": "DN50",
-                "port_pin": "Zona4"
+                "port_pin": "Zona4",
+                "pinAngles": {}
             }
         },
         {
@@ -62,7 +66,8 @@
             "status": "closed",
             "properties": {
                 "promer": "DN50",
-                "port_pin": "Zona5"
+                "port_pin": "Zona5",
+                "pinAngles": {}
             }
         },
         {
@@ -79,7 +84,8 @@
                 "gnc_logic": "",
                 "panel_left": "438px",
                 "panel_top": "372px",
-                "remember_position": true
+                "remember_position": true,
+                "pinAngles": {}
             }
         },
         {
@@ -96,7 +102,8 @@
                 "gnc_logic": "",
                 "remember_position": true,
                 "panel_left": "296px",
-                "panel_top": "622px"
+                "panel_top": "622px",
+                "pinAngles": {}
             }
         },
         {
@@ -104,14 +111,15 @@
             "type": "gauge",
             "name": "Merač pritiska 1",
             "arduinoId": "10.3.4.150",
-            "lat": 45.60884673646123,
-            "lng": 20.57251632213593,
+            "lat": 45.60884579828752,
+            "lng": 20.572519004344944,
             "status": "active",
             "properties": {
                 "sensor_type": "4_20ma",
                 "transfer_function": "",
                 "port_pin": "A0",
-                "max_pressure": 4
+                "max_pressure": 4,
+                "pinAngles": {}
             }
         },
         {
@@ -125,7 +133,8 @@
             "properties": {
                 "sensor_type": "pulse",
                 "transfer_function": "",
-                "port_pin": "DI1"
+                "port_pin": "DI1",
+                "pinAngles": {}
             },
             "sensorType": "pulse",
             "calibrationStep": 0.0022
@@ -135,12 +144,13 @@
             "type": "pump",
             "name": "Pumpa 1",
             "arduinoId": "",
-            "lat": 45.60886643810549,
-            "lng": 20.572356730699543,
+            "lat": 45.60886549993211,
+            "lng": 20.57235270738602,
             "status": "active",
             "properties": {
                 "max_capacity": null,
-                "port_pin": ""
+                "port_pin": "",
+                "pinAngles": {}
             }
         }
     ],
@@ -165,38 +175,8 @@
                     20.572513639926914
                 ],
                 [
-                    45.60903249454638,
-                    20.572455972433094
-                ]
-            ],
-            "properties": {
-                "category": "main",
-                "thickness": 8,
-                "color": "#0055ff"
-            }
-        },
-        {
-            "id": "pipe_1781961506906",
-            "from": null,
-            "to": null,
-            "fromPin": null,
-            "toPin": null,
-            "points": [
-                [
-                    45.60906814501759,
-                    20.57236343622208
-                ],
-                [
-                    45.60899100788326,
-                    20.572309051300312
-                ],
-                [
-                    45.60886080906498,
-                    20.57221725583077
-                ],
-                [
-                    45.60880606117341,
-                    20.57237593226736
+                    45.6090097678939,
+                    20.572478715294327
                 ]
             ],
             "properties": {
@@ -221,8 +201,8 @@
                     20.572469457401677
                 ],
                 [
-                    45.60897338976781,
-                    20.572396963834763
+                    45.6089536068686,
+                    20.572443283046752
                 ]
             ],
             "properties": {
@@ -232,23 +212,139 @@
             }
         },
         {
-            "id": "pipe_1781961569092",
+            "id": "pipe_1781964664385",
+            "from": null,
+            "to": null,
+            "fromPin": null,
+            "toPin": null,
+            "points": [
+                [
+                    45.6081381573467,
+                    20.571835528155894
+                ],
+                [
+                    45.6087932605348,
+                    20.572348684072498
+                ],
+                [
+                    45.608892706953704,
+                    20.57219445705414
+                ],
+                [
+                    45.608960293791164,
+                    20.57225467003478
+                ],
+                [
+                    45.6090568869765,
+                    20.572339296340946
+                ]
+            ],
+            "properties": {
+                "category": "main",
+                "thickness": 8,
+                "color": "#0055ff"
+            }
+        },
+        {
+            "id": "pipe_1781964940135",
             "from": null,
             "to": "dev_1781458239704",
             "fromPin": null,
             "toPin": "W_IN",
             "points": [
                 [
-                    45.60899100788326,
-                    20.572309051300312
+                    45.60966891621483,
+                    20.572915212714616
                 ],
                 [
-                    45.60899100788326,
-                    20.572309051300312
+                    45.60907940816131,
+                    20.57244329838904
                 ],
                 [
-                    45.60897338976781,
-                    20.572370141744617
+                    45.608980895139965,
+                    20.57236343622208
+                ],
+                [
+                    45.6089691196356,
+                    20.57240046868186
+                ]
+            ],
+            "properties": {
+                "category": "main",
+                "thickness": 8,
+                "color": "#0055ff"
+            }
+        },
+        {
+            "id": "pipe_1781964972403",
+            "from": null,
+            "to": null,
+            "fromPin": null,
+            "toPin": null,
+            "points": [
+                [
+                    45.60907940816131,
+                    20.57244329838904
+                ],
+                [
+                    45.60907940816131,
+                    20.57244329838904
+                ],
+                [
+                    45.60895924438239,
+                    20.572753108452282
+                ],
+                [
+                    45.608707099999606,
+                    20.572568105733694
+                ]
+            ],
+            "properties": {
+                "category": "main",
+                "thickness": 8,
+                "color": "#0055ff"
+            }
+        },
+        {
+            "id": "pipe_1781965042721",
+            "from": "dev_1781458241018",
+            "to": null,
+            "fromPin": "W_IN",
+            "toPin": null,
+            "points": [
+                [
+                    45.60902576286044,
+                    20.572466135151082
+                ],
+                [
+                    45.61027289458413,
+                    20.57343250384459
+                ]
+            ],
+            "properties": {
+                "category": "main",
+                "thickness": 8,
+                "color": "#0055ff"
+            }
+        },
+        {
+            "id": "pipe_1781967116506",
+            "from": null,
+            "to": "dev_1781458230156",
+            "fromPin": null,
+            "toPin": "W_OUT",
+            "points": [
+                [
+                    45.608960293791164,
+                    20.57225467003478
+                ],
+                [
+                    45.608960293791164,
+                    20.57225467003478
+                ],
+                [
+                    45.60891856385251,
+                    20.572365000154385
                 ]
             ],
             "properties": {

@@ -12,7 +12,7 @@
         "mapica": true,
         "zone": true,
         "cevi": true,
-        "zice": false,
+        "zice": true,
         "uredjaji": true
     }
 }
