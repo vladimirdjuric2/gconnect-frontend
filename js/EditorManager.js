@@ -1716,62 +1716,82 @@ export class EditorManager {
         
         const mousePoint = this.map.latLngToContainerPoint(latlng);
         let closestDevice = null;
-        let minDistance = 30; // Radijus u pikselima za hvatanje (povećano sa 20 na 30 zbog ofseta vodenih pinova)
+        let minDistance = 30; // Radijus u pikselima za hvatanje
+        let closestPinName = null;
+        let closestPinLatLng = null;
         
         this.devices.forEach(device => {
-            const devLatLng = L.latLng(device.lat, device.lng);
-            const devPoint = this.map.latLngToContainerPoint(devLatLng);
-            const dist = mousePoint.distanceTo(devPoint);
-            
-            if (dist < minDistance) {
-                minDistance = dist;
-                closestDevice = device;
+            if (typeof ComponentRegistry !== 'undefined') {
+                const componentInstance = ComponentRegistry.create(device.type, device);
+                if (componentInstance) {
+                    const pins = componentInstance.getPins();
+                    if (!pins || pins.length === 0) return;
+                    
+                    pins.forEach(pin => {
+                        const isWaterPin = pin.type.includes('water');
+                        
+                        // Stroga tipizacija alata
+                        if (this.selectedTool === 'pipe' && !isWaterPin) return;
+                        if (this.selectedTool === 'wire' && isWaterPin) return;
+                        
+                        const pinLatLng = this.getPinLatLng(device.id, pin.name);
+                        if (pinLatLng) {
+                            const pinPoint = this.map.latLngToContainerPoint(pinLatLng);
+                            const dist = mousePoint.distanceTo(pinPoint);
+                            
+                            if (dist < minDistance) {
+                                minDistance = dist;
+                                closestDevice = device;
+                                closestPinName = pin.name;
+                                closestPinLatLng = pinLatLng;
+                            }
+                        }
+                    });
+                }
             }
         });
         
-        if (closestDevice) {
-            if (closestDevice.type === 'valve') {
-                const pinInLatLng = this.getWaterPinLatLng(closestDevice.id, 'W_IN');
-                const pinOutLatLng = this.getWaterPinLatLng(closestDevice.id, 'W_OUT');
-                
-                let pinInDist = Infinity;
-                let pinOutDist = Infinity;
-                
-                if (pinInLatLng) {
-                    const pinInPoint = this.map.latLngToContainerPoint(pinInLatLng);
-                    pinInDist = mousePoint.distanceTo(pinInPoint);
-                }
-                if (pinOutLatLng) {
-                    const pinOutPoint = this.map.latLngToContainerPoint(pinOutLatLng);
-                    pinOutDist = mousePoint.distanceTo(pinOutPoint);
-                }
-                
-                // Za ventile UVEK snepujemo na najbliži vodovodni pin (nikada na centar ventila)
-                if (pinInDist <= pinOutDist) {
-                    return {
-                        lat: pinInLatLng.lat,
-                        lng: pinInLatLng.lng,
-                        deviceId: closestDevice.id,
-                        pinName: 'W_IN'
-                    };
-                } else {
-                    return {
-                        lat: pinOutLatLng.lat,
-                        lng: pinOutLatLng.lng,
-                        deviceId: closestDevice.id,
-                        pinName: 'W_OUT'
-                    };
-                }
-            }
-            
+        if (closestDevice && closestPinName && closestPinLatLng) {
             return {
-                lat: closestDevice.lat,
-                lng: closestDevice.lng,
+                lat: closestPinLatLng.lat,
+                lng: closestPinLatLng.lng,
                 deviceId: closestDevice.id,
-                pinName: null
+                pinName: closestPinName
             };
         }
         return null;
+    }
+
+    /**
+     * Vraća niz svih validnih L.latLng koordinata pinova za snepovanje, zavisno od trenutnog alata.
+     */
+    getValidDeviceSnapVertices() {
+        const vertices = [];
+        if (!this.devices) return vertices;
+        
+        this.devices.forEach(device => {
+            if (typeof ComponentRegistry !== 'undefined') {
+                const componentInstance = ComponentRegistry.create(device.type, device);
+                if (componentInstance) {
+                    const pins = componentInstance.getPins();
+                    if (!pins || pins.length === 0) return;
+                    
+                    pins.forEach(pin => {
+                        const isWaterPin = pin.type.includes('water');
+                        
+                        // Stroga tipizacija alata
+                        if (this.selectedTool === 'pipe' && !isWaterPin) return;
+                        if (this.selectedTool === 'wire' && isWaterPin) return;
+                        
+                        const pinLatLng = this.getPinLatLng(device.id, pin.name);
+                        if (pinLatLng) {
+                            vertices.push(pinLatLng);
+                        }
+                    });
+                }
+            }
+        });
+        return vertices;
     }
     
     /**
@@ -2064,7 +2084,7 @@ export class EditorManager {
         if (pipe.from) {
             const fromDev = this.devices.find(d => d.id === pipe.from);
             if (fromDev) {
-                if (fromDev.type === 'valve' && pipe.fromPin) {
+                if (pipe.fromPin) {
                     const pinLatLng = this.getWaterPinLatLng(pipe.from, pipe.fromPin);
                     if (pinLatLng) {
                         pipe.points[0] = [pinLatLng.lat, pinLatLng.lng];
@@ -2081,7 +2101,7 @@ export class EditorManager {
         if (pipe.to) {
             const toDev = this.devices.find(d => d.id === pipe.to);
             if (toDev) {
-                if (toDev.type === 'valve' && pipe.toPin) {
+                if (pipe.toPin) {
                     const pinLatLng = this.getWaterPinLatLng(pipe.to, pipe.toPin);
                     if (pinLatLng) {
                         pipe.points[pipe.points.length - 1] = [pinLatLng.lat, pinLatLng.lng];
@@ -2404,6 +2424,23 @@ export class EditorManager {
                 }
                 if (this.pipeLines[pipe.id] && pipe.points) {
                     this.pipeLines[pipe.id].setLatLngs(pipe.points);
+                }
+                
+                // Sinhronizacija sa aktivnim uređivačem geometrije, kako se crevo ne bi otkačilo pri čuvanju
+                if (this.aktivnoUredjivanjeCreva && this.aktivnoUredjivanjeCreva.pipe.id === pipe.id) {
+                    const aktivno = this.aktivnoUredjivanjeCreva;
+                    if (pipe.from === deviceId && pipe.points && pipe.points.length > 0) {
+                        aktivno.trenutneKoordinate[0] = L.latLng(pipe.points[0][0], pipe.points[0][1]);
+                    }
+                    if (pipe.to === deviceId && pipe.points && pipe.points.length > 0) {
+                        aktivno.trenutneKoordinate[aktivno.trenutneKoordinate.length - 1] = L.latLng(pipe.points[pipe.points.length - 1][0], pipe.points[pipe.points.length - 1][1]);
+                    }
+                    if (this.geomEditPoly) {
+                        this.geomEditPoly.setLatLngs(aktivno.trenutneKoordinate);
+                    }
+                    if (aktivno.iscrtajMarkerTemena) {
+                        aktivno.iscrtajMarkerTemena();
+                    }
                 }
             }
         });
@@ -2978,8 +3015,9 @@ export class EditorManager {
         if (pipe.from) {
             const fromDev = this.devices.find(d => d.id === pipe.from);
             if (fromDev) {
-                if (fromDev.type === 'valve' && pipe.fromPin) {
+                if (pipe.fromPin) {
                     startLatLng = this.getWaterPinLatLng(pipe.from, pipe.fromPin);
+                    if (!startLatLng) startLatLng = L.latLng(fromDev.lat, fromDev.lng);
                 } else {
                     startLatLng = L.latLng(fromDev.lat, fromDev.lng);
                 }
@@ -2992,8 +3030,9 @@ export class EditorManager {
         if (pipe.to) {
             const toDev = this.devices.find(d => d.id === pipe.to);
             if (toDev) {
-                if (toDev.type === 'valve' && pipe.toPin) {
+                if (pipe.toPin) {
                     endLatLng = this.getWaterPinLatLng(pipe.to, pipe.toPin);
+                    if (!endLatLng) endLatLng = L.latLng(toDev.lat, toDev.lng);
                 } else {
                     endLatLng = L.latLng(toDev.lat, toDev.lng);
                 }
@@ -3015,6 +3054,7 @@ export class EditorManager {
         } else {
             trenutneKoordinate = [startLatLng, endLatLng];
         }
+        this.aktivnoUredjivanjeCreva.trenutneKoordinate = trenutneKoordinate;
 
         // Inicijalizacija mape povezanih creva za svaku koordinatu aktivnog creva
         this.aktivnoUredjivanjeCreva.connectedPipesOriginalPoints = {};
@@ -3441,6 +3481,7 @@ export class EditorManager {
             });
         };
 
+        this.aktivnoUredjivanjeCreva.iscrtajMarkerTemena = iscrtajMarkerTemena;
         iscrtajMarkerTemena();
 
         const btnCancel = document.getElementById('btn-pipe-geom-cancel');
@@ -4875,13 +4916,8 @@ export class EditorManager {
             }
         }
 
-        // Za GNC komponentu žica ide iz samog centra na mapi
         const device = this.devices.find(d => d.id === deviceId);
         if (!device) return null;
-        
-        if (device.type === 'gnc') {
-            return L.latLng(device.lat, device.lng);
-        }
         
         // Za ostale komponente, računamo poziciju pina na kružnici
         const devLatLng = L.latLng(device.lat, device.lng);
@@ -4928,27 +4964,49 @@ export class EditorManager {
         
         // Dodajemo povezane pinove (uz blago guranje ako ima preklapanja)
         connectedPins.forEach(item => {
-            let angle = item.desiredAngle;
+            let baseAngle = item.desiredAngle;
+            let bestAngle = baseAngle;
+            let step = 18; // 18 stepeni razmaka
+            let multiplier = 1;
+            let sign = 1;
             let attempts = 0;
-            while (placedAngles.some(a => this._angleDiff(a, angle) < 25) && attempts < 15) {
-                angle = (angle + 15) % 360;
+            
+            while (placedAngles.some(a => this._angleDiff(a, bestAngle) < 17) && attempts < 30) {
+                bestAngle = (baseAngle + sign * multiplier * step + 360) % 360;
+                if (sign === 1) {
+                    sign = -1;
+                } else {
+                    sign = 1;
+                    multiplier++;
+                }
                 attempts++;
             }
-            placedAngles.push(angle);
-            result[item.pin.name] = angle;
+            placedAngles.push(bestAngle);
+            result[item.pin.name] = bestAngle;
         });
         
         // Zatim dodeljujemo slobodne pinove, tako da popune rupe
         unconnectedPins.forEach(item => {
             // Osnovni raspored za nepovezane zavisi od ukupnog broja pinova
-            let angle = item.index * (360 / pins.length);
+            let baseAngle = item.index * (360 / pins.length);
+            let bestAngle = baseAngle;
+            let step = 18;
+            let multiplier = 1;
+            let sign = 1;
             let attempts = 0;
-            while (placedAngles.some(a => this._angleDiff(a, angle) < 25) && attempts < 15) {
-                angle = (angle + 15) % 360;
+            
+            while (placedAngles.some(a => this._angleDiff(a, bestAngle) < 17) && attempts < 30) {
+                bestAngle = (baseAngle + sign * multiplier * step + 360) % 360;
+                if (sign === 1) {
+                    sign = -1;
+                } else {
+                    sign = 1;
+                    multiplier++;
+                }
                 attempts++;
             }
-            placedAngles.push(angle);
-            result[item.pin.name] = angle;
+            placedAngles.push(bestAngle);
+            result[item.pin.name] = bestAngle;
         });
         
         return result;
@@ -4965,7 +5023,7 @@ export class EditorManager {
     getPinAngle(deviceId, pinName) {
         if (!this.map) return null;
         const device = this.devices.find(d => d.id === deviceId);
-        if (!device || device.type === 'gnc') return null;
+        if (!device) return null;
         
         const p1 = this.map.project(L.latLng(device.lat, device.lng), this.map.getZoom());
         let targetPoint = null;
@@ -5055,26 +5113,26 @@ export class EditorManager {
                 let updated = false;
                 
                 if (pipe.from) {
-                    const fromDev = this.devices.find(d => d.id === pipe.from);
-                    if (fromDev && fromDev.type === 'valve' && pipe.fromPin && pipe.points && pipe.points.length > 0) {
-                        const pinLatLng = this.getWaterPinLatLng(pipe.from, pipe.fromPin);
-                        if (pinLatLng) {
-                            pipe.points[0] = [pinLatLng.lat, pinLatLng.lng];
-                            updated = true;
-                        }
-                    }
+            const fromDev = this.devices.find(d => d.id === pipe.from);
+            if (fromDev && pipe.fromPin && pipe.points && pipe.points.length > 0) {
+                const pinLatLng = this.getWaterPinLatLng(pipe.from, pipe.fromPin);
+                if (pinLatLng) {
+                    pipe.points[0] = [pinLatLng.lat, pinLatLng.lng];
+                    updated = true;
                 }
-                
-                if (pipe.to) {
-                    const toDev = this.devices.find(d => d.id === pipe.to);
-                    if (toDev && toDev.type === 'valve' && pipe.toPin && pipe.points && pipe.points.length > 0) {
-                        const pinLatLng = this.getWaterPinLatLng(pipe.to, pipe.toPin);
-                        if (pinLatLng) {
-                            pipe.points[pipe.points.length - 1] = [pinLatLng.lat, pinLatLng.lng];
-                            updated = true;
-                        }
-                    }
+            }
+        }
+        
+        if (pipe.to) {
+            const toDev = this.devices.find(d => d.id === pipe.to);
+            if (toDev && pipe.toPin && pipe.points && pipe.points.length > 0) {
+                const pinLatLng = this.getWaterPinLatLng(pipe.to, pipe.toPin);
+                if (pinLatLng) {
+                    pipe.points[pipe.points.length - 1] = [pinLatLng.lat, pinLatLng.lng];
+                    updated = true;
                 }
+            }
+        }
                 
                 if (updated && this.pipeLines[pipe.id] && pipe.points) {
                     this.pipeLines[pipe.id].setLatLngs(pipe.points);
@@ -5350,6 +5408,12 @@ export class EditorManager {
         this.wiring.push(newWire);
         this.saveLayout();
         this.drawWireLine(newWire);
+
+        // Osveži ikone oba povezana uređaja na mapi kako bi se prikazali aktivirani pinovi
+        const fromDev = this.devices.find(d => d.id === fromDeviceId);
+        if (fromDev) this.refreshDeviceIcon(fromDev);
+        const toDev = this.devices.find(d => d.id === toDeviceId);
+        if (toDev) this.refreshDeviceIcon(toDev);
     }
 
     getPinContainerPoint(deviceId, pinName) {
@@ -5363,6 +5427,9 @@ export class EditorManager {
             const isOverlayShowingForThisDevice = overlay && overlay.classList.contains('show') && this.hoveredGncId === deviceId;
             if (isOverlayShowingForThisDevice) {
                 el = document.querySelector(`#gnc-schematic-overlay [data-device-id="${deviceId}"][data-pin-name="${pinName}"]`);
+            } else {
+                // Ako šema nije prikazana, potraži kompaktni pin na mapi (ako je konektovan pa je stoga izrenderovan!)
+                el = document.querySelector(`.compact-device-pins [data-device-id="${deviceId}"][data-pin-name="${pinName}"]`);
             }
         } else {
             // Samo za kompaktne pinove ostalih uređaja na mapi (ventili, pumpe, senzori)
@@ -5533,9 +5600,23 @@ export class EditorManager {
      * Briše električnu vezu iz niza i sa mape
      */
     deleteWire(wireId) {
+        const wireObj = this.wiring.find(w => w.id === wireId);
+        const fromId = wireObj ? wireObj.fromDeviceId : null;
+        const toId = wireObj ? wireObj.toDeviceId : null;
+
         this.wiring = this.wiring.filter(w => w.id !== wireId);
         this.saveLayout();
         this.updateAllWires();
+
+        // Osveži ikone uređaja nakon brisanja veze kako bi se uklonili ugašeni pinovi
+        if (fromId) {
+            const dev = this.devices.find(d => d.id === fromId);
+            if (dev) this.refreshDeviceIcon(dev);
+        }
+        if (toId) {
+            const dev = this.devices.find(d => d.id === toId);
+            if (dev) this.refreshDeviceIcon(dev);
+        }
     }
 
     /**
@@ -5679,7 +5760,7 @@ export class EditorManager {
      */
     updatePinsPosition(deviceId) {
         const device = this.devices.find(d => d.id === deviceId);
-        if (!device || device.type === 'gnc') return;
+        if (!device) return;
 
         // Pronađi marker u DOM-u
         const marker = this.deviceMarkers[deviceId];

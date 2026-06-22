@@ -208,17 +208,22 @@ export class SnapManager {
         }
 
         // 1) Uređaji (pumpe, ventili, merači, kontroleri)
-        if (window.editorManager && window.editorManager.devices) {
-            window.editorManager.devices.forEach(dev => {
-                if (dev.type === 'valve' && typeof window.editorManager.getWaterPinLatLng === 'function') {
-                    const pinInLatLng = window.editorManager.getWaterPinLatLng(dev.id, 'W_IN');
-                    const pinOutLatLng = window.editorManager.getWaterPinLatLng(dev.id, 'W_OUT');
-                    if (pinInLatLng) vertices.push(pinInLatLng);
-                    if (pinOutLatLng) vertices.push(pinOutLatLng);
-                } else if (typeof dev.lat === 'number' && typeof dev.lng === 'number') {
-                    vertices.push(L.latLng(dev.lat, dev.lng));
-                }
-            });
+        if (window.editorManager) {
+            if (typeof window.editorManager.getValidDeviceSnapVertices === 'function') {
+                const validPins = window.editorManager.getValidDeviceSnapVertices();
+                validPins.forEach(pt => vertices.push(pt));
+            } else if (window.editorManager.devices) {
+                window.editorManager.devices.forEach(dev => {
+                    if (dev.type === 'valve' && typeof window.editorManager.getWaterPinLatLng === 'function') {
+                        const pinInLatLng = window.editorManager.getWaterPinLatLng(dev.id, 'W_IN');
+                        const pinOutLatLng = window.editorManager.getWaterPinLatLng(dev.id, 'W_OUT');
+                        if (pinInLatLng) vertices.push(pinInLatLng);
+                        if (pinOutLatLng) vertices.push(pinOutLatLng);
+                    } else if (typeof dev.lat === 'number' && typeof dev.lng === 'number') {
+                        vertices.push(L.latLng(dev.lat, dev.lng));
+                    }
+                });
+            }
         }
 
         // 2) Temena svih sačuvanih creva (cevovoda)

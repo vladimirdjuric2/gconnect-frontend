@@ -94,9 +94,38 @@ export class BaseComponent {
         
         let html = '<div class="compact-device-pins">';
         
+        // Pribavi preračunate uglove ako editor manager postoji
+        let resolvedAngles = null;
+        if (window.editorManager && typeof window.editorManager.getResolvedPinAngles === 'function') {
+            resolvedAngles = window.editorManager.getResolvedPinAngles(this.id);
+        }
+
         pins.forEach((pin, index) => {
+            // Ako je GNC komponenta, ugasi i/o nodove koji nisu konektovani
+            if (this.type === 'gnc') {
+                let isConnected = false;
+                if (window.editorManager) {
+                    if (window.editorManager.wiring) {
+                        isConnected = window.editorManager.wiring.some(w => 
+                            (w.fromDeviceId === this.id && w.fromPin === pin.name) ||
+                            (w.toDeviceId === this.id && w.toPin === pin.name)
+                        );
+                    }
+                    if (!isConnected && window.editorManager.pipes) {
+                        isConnected = window.editorManager.pipes.some(p => 
+                            (p.from === this.id && p.fromPin === pin.name) ||
+                            (p.to === this.id && p.toPin === pin.name)
+                        );
+                    }
+                }
+                if (!isConnected) return; // Preskoči ne-konektovani pin za GNC
+            }
+
             // Podrazumevani ugao kako bi se pinovi ravnomerno rasporedili u krug
-            const defaultAngle = index * (360 / pins.length);
+            let pinAngle = index * (360 / pins.length);
+            if (resolvedAngles && typeof resolvedAngles[pin.name] !== 'undefined') {
+                pinAngle = resolvedAngles[pin.name];
+            }
             
             // Da li je vodeni pin
             const isWater = pin.type === 'water_in' || pin.type === 'water_out' || pin.type === 'water_input' || pin.type === 'water_output';
@@ -112,7 +141,7 @@ export class BaseComponent {
                      data-pin-name="${pin.name}" 
                      data-pin-label="${label}" 
                      onclick="window.editorManager.${clickHandler}('${this.id}', '${pin.name}', this, event)" 
-                     style="${this.getPinStyle(pin.name, defaultAngle, 18)}"></div>
+                     style="${this.getPinStyle(pin.name, pinAngle, 18)}"></div>
             `;
         });
         
