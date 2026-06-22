@@ -5,10 +5,10 @@
     "map_lon": "",
     "map_zoom": "5",
     "layer_visibility": {
-        "stopala": false,
-        "trougao": false,
+        "stopala": true,
+        "trougao": true,
         "etiketa": true,
-        "nazivi": false,
+        "nazivi": true,
         "mapica": true,
         "zone": true,
         "cevi": true,
